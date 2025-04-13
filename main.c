@@ -15,7 +15,7 @@ void clrscr() {
 }
 
 int main() {
-    int chosen;
+    char *chosen = malloc(10 * sizeof(char));
     fd = open(LED_DEVICE_PATH, O_RDWR);
     if (fd < 0) {
         perror("Failed to open device");
@@ -27,26 +27,30 @@ int main() {
         {
             printf("1. Led ON\n");
             printf("0. Led OFF\n");
+            printf("q. Quit Program\n");
             printf("Enter your chosen: ");
-            scanf("%d", &chosen);
-            if ((chosen == 1) && (chosen ==0)){
+            fgets(chosen, 10, stdin);
+            if (chosen[0] != '1' && chosen[0] != '0' && chosen[0] != 'q'){
                 printf("Invalid chosen !! Do again \n");
             }
-        } while (chosen != 1 && chosen != 0)
+        } while (chosen[0] != '1' && chosen[0] != '0' && chosen[0] != 'q');
 
-        if (chosen == 1){
+        if (chosen[0] == '1'){
             int ret = write (fd, "1", 1);
             if (ret == -1)
             {
                 printf("Can not write 1\n");
             }
         }
-        else {
+        else if (chosen[0] == '0'){
             int ret = write (fd, "0", 1);
             if (ret == -1)
             {
                 printf("Can not write 0\n");
             }            
+        }
+        else {
+            break;
         }
     }
 
