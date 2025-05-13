@@ -1,55 +1,63 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
-#define LED_DEVICE_PATH "/dev/my_led23_device"
+typedef struct {
+    char ssid[32];
+    char signal[16];
+    char protocol[16];
+} Network;
 
-int fd;
+int Scan_wifi (Network *networks, int max_networks){
+    FILE *fp = popen("iw dev wlan0 scan", "r");
+    if (!fp) {
+        printf(">>> ERROR: Cannot run iw scan\n");
+        return 0;
+    }
 
-// Clear the terminal
-void clrscr() {
-    system("clear");
-    return;
+    char line[256];
+    int count = 0;
+    Network current ={0};
+
+    while (fgets(line, sizeof(line), fp) && count < max_networks)
+    {
+        line[strcspn(line, "\n")] = 0;
+
+        if (strstr(line, "BSS")) {
+            if (strlen(current.ssid) && strlen(current.signal)) {
+                networks[count++] = current;
+                memset(&current, 0, sizeof(current));
+            }
+        }
+        else if (strstr(line, "SSID:")) {
+            sscanf(line, " SSID: %31[^\n]", current.ssid);
+        } else if (strstr(line, "signal:")) {
+            sscanf(line, " signal: %15[^\n]", current.signal);
+        } else if (strstr(line, "802.11")) {
+            if (strstr(line, "ax")) strcpy(current.protocol, "802.11ax (Wi-Fi 6)");
+            else if (strstr(line, "ac")) strcpy(current.protocol, "802.11ac (Wi-Fi 5)");
+            else if (strstr(line, "n")) strcpy(current.protocol, "802.11n (Wi-Fi 4)");
+            else strcpy(current.protocol, "Unknown");
+        }
+    }
+
+    pclose(fp);
+    return count;
 }
 
 int main() {
-    int chosen;
-    fd = open(LED_DEVICE_PATH, O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open device");
-        return 1;
-    }
-
-    while(1){
-        do
-        {
-            printf("1. Led ON\n");
-            printf("0. Led OFF\n");
-            printf("Enter your chosen: ");
-            scanf("%d", &chosen);
-            if ((chosen == 1) && (chosen ==0)){
-                printf("Invalid chosen !! Do again \n");
-            }
-        } while (chosen != 1 && chosen != 0)
-
-        if (chosen == 1){
-            int ret = write (fd, "1", 1);
-            if (ret == -1)
-            {
-                printf("Can not write 1\n");
-            }
+    Network networks[10]; // Giới hạn 10 mạng
+    while (1) {
+        int count = Scan_wifi(networks, 10);
+        printf("\nWi-Fi Networks Scanned: %d\n", count);
+        printf("----------------------------------------\n");
+        printf("%-20s %-15s %s\n", "SSID", "Signal (dBm)", "Protocol");
+        printf("----------------------------------------\n");
+        for (int i = 0; i < count; i++) {
+            printf("%-20s %-15s %s\n", networks[i].ssid, networks[i].signal, networks[i].protocol);
         }
-        else {
-            int ret = write (fd, "0", 1);
-            if (ret == -1)
-            {
-                printf("Can not write 0\n");
-            }            
-        }
+        sleep(10); // Cập nhật mỗi 10 giây
     }
-
-    close (fd);
     return 0;
 }

@@ -1,4 +1,13 @@
-all:
-	gcc -o main main.c
-clean: 
-	rm -rf main
+CC=gcc
+CFLAGS=-Wall
+
+all: main
+
+main: main.o
+	$(CC) $(CFLAGS) -o main main.o
+
+clean:
+	rm -f main main.o
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<
