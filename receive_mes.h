@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,4 +15,4 @@
 
 void SocketUdp_Configure(int *ser_fd, struct sockaddr_in *ser_addr, int port);
 void Authen_Check(int ser_fd, struct sockaddr_in *cli_addr);
-void Mes_Receive(int ser_fd, struct sockaddr_in *cli_addr, char *mess);
+int Mes_Receive(int ser_fd, struct sockaddr_in *cli_addr, char *mess);

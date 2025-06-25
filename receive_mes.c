@@ -1,12 +1,5 @@
 #include "receive_mes.h"
 
-#define CONNECT_TOKEN "Tuan08*"
-#define PR_ERR(str)  printf ("!!! Error in %s function\n", str)
-
-int ser_fd;
-char *message_r;
-char *token;
-
 void SocketUdp_Configure(int *ser_fd, struct sockaddr_in *ser_addr, int port){
     *ser_fd = socket (AF_INET, SOCK_DGRAM, 0);
     if (fd < 0){
@@ -57,13 +50,15 @@ void Authen_Check(int ser_fd, struct sockaddr_in *cli_addr)
     }
 }
 
-void Mes_Receive(int ser_fd, struct sockaddr_in *cli_addr, char *mess) {
+int Mes_Receive(int ser_fd, struct sockaddr_in *cli_addr, char *mess) {
     socklen_t len = sizeof (struct sockaddr_in);
     int n = recvfrom (ser_fd, mess, 50, 0, (struct sockaddr *) cli_addr, &len);
     if (n <= 0) {
         PR_ERR ("Mes_Receive");
         PR_ERR ("recvfrom");
-        return ;
+        return 0;
     }
     mess[n] = '\0';
+    
+    return n;
 }

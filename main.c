@@ -1,20 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <stdbool.h>
-#include <sys/socket.h>      
-#include <netinet/in.h>     
-#include <arpa/inet.h>
-#include <signal.h>
-#include <unistd.h>
-
-#define CONNECT_TOKEN "Tuan08*"
-#define PR_ERR(str)  printf ("!!! Error in %s function\n", str)
-
-int ser_fd;
-char *message_r;
-char *token;
+#include "receive_mes.h"
+#include "ssd1306.h"
 
 void sig_handler()
 {
@@ -25,6 +10,35 @@ void sig_handler()
     exit(EXIT_SUCCESS);
 }
 
+int server_fd;
+struct sockaddr_in server_addr, client_addr;
+int port;
+char *message;
+
+int main() {
+    message = malloc (50);
+
+    if (signal(SIGINT,sig_handler) == SIG_ERR)
+    {
+        printf("Can not handler SIGINT\n");
+    }
+
+    printf ("Enter your server port you want to open : ");
+    fflush(stdout);
+    scanf ("%d", &ser_port);
+    getchar();
+
+    SocketUdp_Configure (&server_fd, &server_addr, port);
+    Authen_Check (server_fd, &client_addr);
+
+    while (1)
+    {
+        int n = Mes_Receive(server_fd, &client_addr, message);
+        Mes_Receive(server_fd, &client_addr, message + n);
+        
+    }
+
+}
 int main(){
     struct sockaddr_in ser_addr, cli_addr;
     socklen_t len = sizeof (struct sockaddr_in);
