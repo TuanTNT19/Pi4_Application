@@ -2,7 +2,7 @@
 
 void SocketUdp_Configure(int *ser_fd, struct sockaddr_in *ser_addr, int port){
     *ser_fd = socket (AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0){
+    if (*ser_fd < 0){
         PR_ERR ("SocketUdp_Open");
         PR_ERR ("socket");
         return ;
