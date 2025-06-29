@@ -34,7 +34,6 @@ int main() {
     while (1)
     {
         int n = Mes_Receive(server_fd, &client_addr, message);
-        Mes_Receive(server_fd, &client_addr, message + n);
         printf ("Message receive : %s\n", message);
         
     }
