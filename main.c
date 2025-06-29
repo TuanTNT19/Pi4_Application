@@ -13,6 +13,7 @@ void sig_handler()
     printf("========= QUICK TURN OFF ========\n");
     close (server_fd);
     free(message);
+    free(mes_display);
     exit(EXIT_SUCCESS);
 }
 
@@ -39,6 +40,7 @@ int main() {
         printf ("Message receive : %s\n", message);
         SSD1306_Clear(server_fd);
         sscanf (message, "%d %d %[^\n]", &line, &col, mes_display);
-        SSD1306_PrintString (server_fd, line, col, mes_display);
+        printf ("line %d col %d mes_display %s\n", line, col, mes_display);
+        //SSD1306_PrintString (server_fd, line, col, mes_display);
     }
 }
