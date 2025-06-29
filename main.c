@@ -5,7 +5,8 @@
 int server_fd;
 struct sockaddr_in server_addr, client_addr;
 int port;
-char *message;
+char *message, *mes_display;
+int col, line;
 
 void sig_handler()
 {
@@ -17,6 +18,7 @@ void sig_handler()
 
 int main() {
     message = malloc (50);
+    mes_display = malloc (45);
 
     if (signal(SIGINT,sig_handler) == SIG_ERR)
     {
@@ -35,6 +37,8 @@ int main() {
     {
         int n = Mes_Receive(server_fd, &client_addr, message);
         printf ("Message receive : %s\n", message);
-        
+        SSD1306_Clear(server_fd);
+        sscanf (message, "%d %d %[^\n]", &line, &col, mes_display);
+        SSD1306_PrintString (server_fd, line, col, mes_display);
     }
 }
