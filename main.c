@@ -7,11 +7,13 @@ struct sockaddr_in server_addr, client_addr;
 int port;
 char *message, *mes_display;
 int col, line;
+int fd;
 
 void sig_handler()
 {
     printf("========= QUICK TURN OFF ========\n");
     close (server_fd);
+    close (fd);
     free(message);
     free(mes_display);
     exit(EXIT_SUCCESS);
@@ -20,6 +22,8 @@ void sig_handler()
 int main() {
     message = malloc (50);
     mes_display = malloc (45);
+    
+    fd = SSD1306_OpenDevFile (SSD1306_DEV_FILE);
 
     if (signal(SIGINT,sig_handler) == SIG_ERR)
     {
@@ -38,9 +42,9 @@ int main() {
     {
         int n = Mes_Receive(server_fd, &client_addr, message);
         printf ("Message receive : %s\n", message);
-        SSD1306_Clear(server_fd);
+        SSD1306_Clear(fd);
         sscanf (message, "%d %d %[^\n]", &line, &col, mes_display);
         printf ("line %d col %d mes_display %s\n", line, col, mes_display);
-        //SSD1306_PrintString (server_fd, line, col, mes_display);
+        SSD1306_PrintString (fd, line, col, mes_display);
     }
 }

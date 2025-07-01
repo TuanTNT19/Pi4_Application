@@ -1,5 +1,14 @@
 # include "ssd1306.h"
 
+int SSD1306_OpenDevFile(char *file_path){
+    int fd = open(file_path, O_WRONLY);
+    if (fd < 0){
+        PR_ERR("SSD1306_Clear");
+        printf (">>>> Please check device file in /dev/ !!!!\n");
+        return -1;
+    }
+    return fd;
+}
 void SSD1306_Clear(int fd) {
     int ret = write(fd, "clear", sizeof("clear"));
     if (ret <= 0) {
@@ -9,7 +18,7 @@ void SSD1306_Clear(int fd) {
 }
 
 void SSD1306_SetCursor(int fd, int line, int col){
-    char buff[10];
+    char buff[15];
     const char *cmd = "cursor";
     sprintf (buff, "%s %d %d", cmd, line, col);
     
