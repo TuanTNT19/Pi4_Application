@@ -51,7 +51,7 @@ int main(){
     iph->ttl = 64;
     iph->protocol = IPPROTO_ICMP;
     iph->saddr = inet_addr("192.168.2.1"); /* IP nguồn của tun0 */
-    iph->daddr = inet_addr("192.168.1.200"); /* IP đích, ví dụ IP của wlan0 */
+    iph->daddr = inet_addr("192.168.1.102"); /* IP đích, ví dụ IP của wlan0 */
     iph->check = 0;
 
     icmph = (struct icmphdr *)(buff + sizeof(struct iphdr));
