@@ -83,7 +83,6 @@ void get_data(char *temp_str, char *humidity_str, char *city_name, char *status)
 
     if (last_line) {
         extract_data(last_line, temp_str, humidity_str, city_name, status);
-        //printf("City: %s, Temp: %s, Humidity: %s, Status: %s\n", city_name, temp_str, humidity_str, status);
         free(last_line);
     } else {
         sleep(5); // Chờ nếu file trống
