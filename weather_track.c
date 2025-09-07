@@ -16,6 +16,15 @@ int ssd1306_fd;
 int output_fd;
 int header_fd;
 
+bool dns_setting() {
+    int result = system("/usr//bin/set_dns");
+    if (result == -1) {
+        printf("ERROR: Can not setting dns");
+        return false;
+    }
+    return true;
+}
+
 void sig_handler()
 {
     printf("========= QUICK TURN OFF ========\n");
@@ -44,6 +53,10 @@ int main() {
     if (signal(SIGINT,sig_handler) == SIG_ERR)
     {
         printf("Can not handler SIGINT\n");
+    }
+
+    if (!dns_setting()) {
+        return -1;
     }
 
     output_fd = open (OUTPUT_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0666);
