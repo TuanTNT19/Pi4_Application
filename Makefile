@@ -1,13 +1,9 @@
-CC=gcc
-CFLAGS=-Wall
-
 all: main
 
-main: main.o
-	$(CC) $(CFLAGS) -o main main.o
-
+main: 
+	$(CC) $(CFLAGS) main.c  -o main -lnetfilter_queue -lcurl
 clean:
-	rm -f main main.o
+	rm -f main 
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

@@ -3,6 +3,8 @@
 #include <net/ethernet.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
+#include <arpa/inet.h> // Thêm để khai báo inet_ntoa
+#include <libnetfilter_queue/linux_nfnetlink_queue.h> // Thêm để khai báo NF_ACCEPT
 
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
