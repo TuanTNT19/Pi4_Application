@@ -1,9 +1,11 @@
+CC = aarch64-openwrt-linux-musl-gcc
+CFLAGS = -Wall -I$(STAGING_DIR)/usr/include
+LDFLAGS = -L$(STAGING_DIR)/usr/lib -lnetfilter_queue -lcurl
+
 all: main
 
-main: 
-	$(CC) $(CFLAGS) main.c  -o main -lnetfilter_queue -lcurl
-clean:
-	rm -f main 
+main: main.c
+	$(CC) $(CFLAGS) main.c -o main $(LDFLAGS)
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $<
+clean:
+	rm -f main
