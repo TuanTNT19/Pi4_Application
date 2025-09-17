@@ -95,7 +95,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             printf("Payload quá ngắn: %d byte\n", payload_len);
         }
 
-        return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
+        return nfq_set_verdict(qh, id, 1, 0, NULL);
     }
     return 0;
 }
