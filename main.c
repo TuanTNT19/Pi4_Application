@@ -110,7 +110,6 @@ int main() {
     if (nfq_unbind_pf(h, AF_INET) < 0) {
         perror("Lỗi unbind");
         nfq_close(h);
-        return -1;
     }
 
     if (nfq_bind_pf(h, AF_INET) < 0) {
