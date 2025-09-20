@@ -90,6 +90,7 @@ int main() {
     int rv;
     printf("Bắt đầu bắt bản tin\n");
     while ((rv = recv(fd, recv_buf, sizeof(recv_buf), 0)) >= 0) {
+        printf("Nhận dữ liệu, kích thước: %d byte\n", rv);
         nfq_handle_packet(h, recv_buf, rv);
     }
     if (rv < 0) {
