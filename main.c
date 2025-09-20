@@ -5,6 +5,9 @@
 #include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
 #include <libnetfilter_queue/linux_nfnetlink_queue.h>
+#include <fcntl.h>    // Cho fcntl, F_GETFL, F_SETFL, O_NONBLOCK
+#include <errno.h>    // Cho errno, EAGAIN, EWOULDBLOCK
+#include <unistd.h>   // Cho sleep
 
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
     if (!nfa) {
@@ -106,7 +109,7 @@ int main() {
         printf("Nhận dữ liệu, kích thước: %d byte\n", rv);
         nfq_handle_packet(h, recv_buf, rv);
     }
-    
+
     nfq_destroy_queue(qh);
     nfq_close(h);
     return 0;
