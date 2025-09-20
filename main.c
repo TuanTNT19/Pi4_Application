@@ -80,6 +80,13 @@ int main() {
     }
     printf("Queue created successfully\n");
 
+
+    // Set the queue mode to copy packets to userspace
+    if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
+        fprintf(stderr, "Can't set packet_copy mode\n");
+        exit(1);
+    }
+    
     int fd = nfq_fd(h);
     if (fd < 0) {
         perror("Lỗi lấy file descriptor");
