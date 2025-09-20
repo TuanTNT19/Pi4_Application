@@ -89,15 +89,24 @@ int main() {
     char recv_buf[4096];
     int rv;
     printf("Bắt đầu bắt bản tin\n");
+    int flags = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
     while (1) {
-        recv(fd, recv_buf, sizeof(recv_buf), 0);
+        rv = recv(fd, recv_buf, sizeof(recv_buf), 0);
+        if (rv < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                printf("Chưa có dữ liệu, chờ...\n");
+                sleep(1); // Chờ 1 giây trước khi thử lại
+                continue;
+            }
+            perror("Lỗi recv");
+            break;
+        }
         printf("Nhận dữ liệu, kích thước: %d byte\n", rv);
         nfq_handle_packet(h, recv_buf, rv);
     }
-    if (rv < 0) {
-        perror("Lỗi recv");
-    }
-
+    
     nfq_destroy_queue(qh);
     nfq_close(h);
     return 0;
