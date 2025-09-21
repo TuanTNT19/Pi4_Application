@@ -27,14 +27,14 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             // if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= payload_len) {
             uint16_t ip_total_len = ntohs(ip->tot_len);
             if (ip_total_len == payload_len) {
-                uint32_t *s_ip = (uint32_t *)malloc(32);
-                uint32_t *d_ip = (uint32_t *)malloc(32);
-                uint32_t *temp_s_ip = (uint32_t *)malloc(32);
-                uint32_t *temp_d_ip = (uint32_t *)malloc(32);
-                temp_s_ip = ntohl(ip->saddr);
-                temp_d_ip = ntohl(ip->daddr);
-                inet_ntop(AF_INET, temp_s_ip, s_ip, INET_ADDRSTRLEN);
-                inet_ntop(AF_INET, temp_d_ip, d_ip, INET_ADDRSTRLEN);
+                uint32_t host_saddr = ntohl(ip->saddr);
+                uint32_t host_daddr = ntohl(ip->daddr);
+                struct in_addr src_addr = { .s_addr = host_saddr };
+                struct in_addr dst_addr = { .s_addr = host_daddr };
+                char s_ip[INET_ADDRSTRLEN];
+                char d_ip[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &src_addr, s_ip, INET_ADDRSTRLEN);
+                inet_ntop(AF_INET, &dst_addr, d_ip, INET_ADDRSTRLEN);
                 printf("Gói tin Bắt đầu từ header IP tại offset 0, Nguồn: %s, Đích: %s, Độ dài header IP: %d byte, Tổng độ dài IP: %u byte\n",
                        s_ip, d_ip, ip_header_len, ip_total_len);
 
@@ -63,14 +63,14 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
                 int ip_header_len = ip->ihl * 4;
                 if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= (payload_len - sizeof(struct ethhdr))) {
                     uint16_t ip_total_len = ntohs(ip->tot_len);
-                    uint32_t *s_ip = (uint32_t *)malloc(32);
-                    uint32_t *d_ip = (uint32_t *)malloc(32);
-                    uint32_t *temp_s_ip = (uint32_t *)malloc(32);
-                    uint32_t *temp_d_ip = (uint32_t *)malloc(32);
-                    temp_s_ip = ntohl(ip->saddr);
-                    temp_d_ip = ntohl(ip->daddr);
-                    inet_ntop(AF_INET, temp_s_ip, s_ip, INET_ADDRSTRLEN);
-                    inet_ntop(AF_INET, temp_d_ip, d_ip, INET_ADDRSTRLEN);
+                uint32_t host_saddr = ntohl(ip->saddr);
+                uint32_t host_daddr = ntohl(ip->daddr);
+                struct in_addr src_addr = { .s_addr = host_saddr };
+                struct in_addr dst_addr = { .s_addr = host_daddr };
+                char s_ip[INET_ADDRSTRLEN];
+                char d_ip[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &src_addr, s_ip, INET_ADDRSTRLEN);
+                inet_ntop(AF_INET, &dst_addr, d_ip, INET_ADDRSTRLEN);
                     printf("Bắt đầu từ header Ethernet, IP tại offset 14, Nguồn: %s, Đích: %s, Độ dài header IP: %d byte, Tổng độ dài IP: %u byte\n",
                            s_ip, d_ip, ip_header_len, ip_total_len);
                     if (payload_len >= sizeof(struct ethhdr) + ip_total_len) {
