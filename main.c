@@ -27,8 +27,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             // if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= payload_len) {
             uint16_t ip_total_len = ntohs(ip->tot_len);
             if (ip_total_len == payload_len) {
-                uint32_t host_saddr = ntohl(ip->saddr);
-                uint32_t host_daddr = ntohl(ip->daddr);
+                uint32_t host_saddr = ip->saddr;
+                uint32_t host_daddr = ip->daddr;
                 char s_ip[INET_ADDRSTRLEN];
                 char d_ip[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
@@ -53,7 +53,6 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
                 }
                 free (s_ip);
                 free (d_ip);
-            }
         } else {
             struct ethhdr *eth = (struct ethhdr *)payload;
             if (ntohs(eth->h_proto) == ETH_P_IP && payload_len >= sizeof(struct ethhdr) + sizeof(struct iphdr)) {
@@ -61,8 +60,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
                 int ip_header_len = ip->ihl * 4;
                 if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= (payload_len - sizeof(struct ethhdr))) {
                     uint16_t ip_total_len = ntohs(ip->tot_len);
-                    uint32_t host_saddr = ntohl(ip->saddr);
-                    uint32_t host_daddr = ntohl(ip->daddr);
+                    uint32_t host_saddr = ip->saddr;
+                    uint32_t host_daddr = ip->daddr;
                     char s_ip[INET_ADDRSTRLEN];
                     char d_ip[INET_ADDRSTRLEN];
                     inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
@@ -84,6 +83,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
         }
 
         return nfq_set_verdict(qh, id, 1, 0, NULL);
+    }
     }
     return 0;
 }
