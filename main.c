@@ -74,14 +74,15 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
                         printf("Dữ liệu không đầy đủ, payload_len: %d, ip_total_len: %d\n",
                                payload_len, ip_total_len + sizeof(struct ethhdr));
                     }
+
+                    free (s_ip);
+                    free (d_ip);
                 } else {
                     printf("Header IP không hợp lệ sau Ethernet.\n");
                 }
             } else {
                 printf("Header Ethernet không phải IP hoặc không đủ dữ liệu, h_proto: %04x\n", ntohs(eth->h_proto));
             }
-                free (s_ip);
-                free (d_ip);
         }
 
         return nfq_set_verdict(qh, id, 1, 0, NULL);
