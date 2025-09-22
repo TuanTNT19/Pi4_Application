@@ -72,7 +72,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
                     if (payload_len >= sizeof(struct ethhdr) + ip_total_len) {
                         printf("Dữ liệu đầy đủ: %d byte\n", payload_len);
                     } else {
-                        printf("Dữ liệu không đầy đủ, payload_len: %d, ip_total_len: %u\n",
+                        printf("Dữ liệu không đầy đủ, payload_len: %d, ip_total_len: %d\n",
                                payload_len, ip_total_len + sizeof(struct ethhdr));
                     }
                 } else {
@@ -83,51 +83,51 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             }
         }
 
-        return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
+        return nfq_set_verdict(qh, id, 1, 0, NULL);
     }
     return 0;
 }
 
-static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
-    if (!nfa) {
-        printf("Không có dữ liệu gói tin\n");
-        return 0;
-    }
-    struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
-    if (ph) {
-        unsigned int id = ntohl(ph->packet_id);
-        printf("Gói tin ID: %u nhận được\n", id);
+// static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
+//     if (!nfa) {
+//         printf("Không có dữ liệu gói tin\n");
+//         return 0;
+//     }
+//     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
+//     if (ph) {
+//         unsigned int id = ntohl(ph->packet_id);
+//         printf("Gói tin ID: %u nhận được\n", id);
 
-        unsigned char *payload;
-        int payload_len = nfq_get_payload(nfa, &payload);
-        printf("Payload length: %d\n", payload_len);
+//         unsigned char *payload;
+//         int payload_len = nfq_get_payload(nfa, &payload);
+//         printf("Payload length: %d\n", payload_len);
 
-        if (payload_len >= sizeof(struct iphdr)) {
-            struct iphdr *ip = (struct iphdr *)payload;
-            int ip_header_len = ip->ihl * 4;
-            if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= payload_len) {
-                uint16_t ip_total_len = ntohs(ip->tot_len);
-                printf("Nguồn: %s, Độ dài header IP: %d, Tổng độ dài IP: %u\n",
-                       inet_ntoa(*(struct in_addr *)&ip->saddr), ip_header_len, ip_total_len);
+//         if (payload_len >= sizeof(struct iphdr)) {
+//             struct iphdr *ip = (struct iphdr *)payload;
+//             int ip_header_len = ip->ihl * 4;
+//             if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= payload_len) {
+//                 uint16_t ip_total_len = ntohs(ip->tot_len);
+//                 printf("Nguồn: %s, Độ dài header IP: %d, Tổng độ dài IP: %u\n",
+//                        inet_ntoa(*(struct in_addr *)&ip->saddr), ip_header_len, ip_total_len);
 
-                if (ip->protocol == IPPROTO_ICMP && payload_len >= ip_header_len + sizeof(struct icmphdr)) {
-                    struct icmphdr *icmp = (struct icmphdr *)(payload + ip_header_len);
-                    printf("Gói tin ICMP, Type: %d, Code: %d\n", icmp->type, icmp->code);
-                    if (icmp->type == 8 || icmp->type == 0) {
-                        printf("Bản tin Ping (Echo %s)\n", icmp->type == 8 ? "Request" : "Reply");
-                    }
-                }
-            } else {
-                printf("Header IP không hợp lệ\n");
-            }
-        } else {
-            printf("Payload quá ngắn hoặc không chứa header IP\n");
-        }
+//                 if (ip->protocol == IPPROTO_ICMP && payload_len >= ip_header_len + sizeof(struct icmphdr)) {
+//                     struct icmphdr *icmp = (struct icmphdr *)(payload + ip_header_len);
+//                     printf("Gói tin ICMP, Type: %d, Code: %d\n", icmp->type, icmp->code);
+//                     if (icmp->type == 8 || icmp->type == 0) {
+//                         printf("Bản tin Ping (Echo %s)\n", icmp->type == 8 ? "Request" : "Reply");
+//                     }
+//                 }
+//             } else {
+//                 printf("Header IP không hợp lệ\n");
+//             }
+//         } else {
+//             printf("Payload quá ngắn hoặc không chứa header IP\n");
+//         }
 
-        return nfq_set_verdict(qh, id, 1, 0, NULL); // Sử dụng NF_ACCEPT
-    }
-    return 0;
-}
+//         return nfq_set_verdict(qh, id, 1, 0, NULL); // Sử dụng NF_ACCEPT
+//     }
+//     return 0;
+// }
 
 int main() {
     struct nfq_handle *h = nfq_open();
