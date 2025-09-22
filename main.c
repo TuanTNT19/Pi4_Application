@@ -29,8 +29,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             if (ip_total_len == payload_len) {
                 uint32_t host_saddr = ip->saddr;
                 uint32_t host_daddr = ip->daddr;
-                char s_ip[INET_ADDRSTRLEN];
-                char d_ip[INET_ADDRSTRLEN];
+                char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
+                char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
                 inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
                 inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
                 printf("Gói tin Bắt đầu từ header IP tại offset 0, Nguồn: %s, Đích: %s, Độ dài header IP: %d byte, Tổng độ dài IP: %u byte\n",
@@ -62,8 +62,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
                     uint16_t ip_total_len = ntohs(ip->tot_len);
                     uint32_t host_saddr = ip->saddr;
                     uint32_t host_daddr = ip->daddr;
-                    char s_ip[INET_ADDRSTRLEN];
-                    char d_ip[INET_ADDRSTRLEN];
+                    char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
+                    char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
                     inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
                     inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
                     printf("Bắt đầu từ header Ethernet, IP tại offset 14, Nguồn: %s, Đích: %s, Độ dài header IP: %d byte, Tổng độ dài IP: %u byte\n",
@@ -80,6 +80,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             } else {
                 printf("Header Ethernet không phải IP hoặc không đủ dữ liệu, h_proto: %04x\n", ntohs(eth->h_proto));
             }
+                free (s_ip);
+                free (d_ip);
         }
 
         return nfq_set_verdict(qh, id, 1, 0, NULL);
