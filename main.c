@@ -24,6 +24,7 @@ int set_interface_ip(char *ifname, char *ip, char *netmask) {
     }
 
     struct ifreq ifr;  // CTDL trên user space dùng để tương tác vs các giao diện mạng qia ioctl
+    memset(&ifr, 0, sizeof(ifr));
     strncpy(ifr.ifr_name, ifname, IFNAMSIZ);    
     struct sockaddr_in *addr = (struct sockaddr_in *)&ifr.ifr_addr; // con trỏ addr quản lý vùng nhớ địa chỉ cuả ifr.ifr_addr
     ifr.ifr_addr.sa_family = AF_INET;
@@ -41,22 +42,6 @@ int set_interface_ip(char *ifname, char *ip, char *netmask) {
         return 0;        
     }
 
-
-
-    // ifr.ifr_addr.sa_family = AF_INET;
-    // inet_pton(AF_INET, ip, &ifr.ifr_addr.sa_data);
-    // if (ioctl (sock_id, SIOCSIFADDR, &ifr) < 0) {
-    //     printf ("[ERROR] Can not set IP\n");
-    //     return 0;
-    // }
-
-    // ifr.ifr_netmask.sa_family = AF_INET;
-    // inet_pton (AF_INET, netmask, &ifr.ifr_netmask.sa_data);
-    // if (ioctl(sock_id, SIOCSIFNETMASK, &ifr) < 0) {
-    //     printf ("[ERROR] Can not set Mask\n");
-    //     return 0;        
-    // }    
-
     ifr.ifr_flags |= IFF_UP;
     if (ioctl(sock_id, SIOCSIFFLAGS, &ifr) < 0) {
         printf ("[ERROR] Can not set interface up\n");
@@ -64,11 +49,21 @@ int set_interface_ip(char *ifname, char *ip, char *netmask) {
     }
 
     close (sock_id);
-    printf ("Interface %s is enabled with IP: %d, Netmask: %s\n", ifname, ip, netmask);
+    printf ("Interface %s is enabled with IP: %s, Netmask: %s\n", ifname, ip, netmask);
 
     // LẤy ra MAC để xem thử
     unsigned char mac_addr[6];
-    ioctl (sock_id, SIOCGIFHWADDR, &ifr);
+    if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) {
+        perror("[ERROR] Can not get MAC address");
+        close(sock);
+        return -1;
+    }
+    if (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
+        fprintf(stderr, "[ERROR] Interface %s is not Ethernet/Wi-Fi (sa_family=%d)\n",
+                ifname, ifr.ifr_hwaddr.sa_family);
+        close(sock);
+        return -1;
+    }
     memcpy(mac_addr, ifr.ifr_hwaddr.sa_data, 6);
     printf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
            mac_addr[0], mac_addr[1], mac_addr[2],
