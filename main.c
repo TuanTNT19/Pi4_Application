@@ -48,27 +48,27 @@ int set_interface_ip(char *ifname, char *ip, char *netmask) {
         return 0;             
     }
 
-    close (sock_id);
     printf ("Interface %s is enabled with IP: %s, Netmask: %s\n", ifname, ip, netmask);
 
     // LẤy ra MAC để xem thử
     unsigned char mac_addr[6];
-    if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) {
+    if (ioctl(sock_id, SIOCGIFHWADDR, &ifr) < 0) {
         perror("[ERROR] Can not get MAC address");
-        close(sock);
+        close(sock_id);
         return -1;
     }
     if (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
         fprintf(stderr, "[ERROR] Interface %s is not Ethernet/Wi-Fi (sa_family=%d)\n",
                 ifname, ifr.ifr_hwaddr.sa_family);
-        close(sock);
+        close(sock_id);
         return -1;
     }
     memcpy(mac_addr, ifr.ifr_hwaddr.sa_data, 6);
     printf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
            mac_addr[0], mac_addr[1], mac_addr[2],
            mac_addr[3], mac_addr[4], mac_addr[5]);
-
+           
+            close (sock_id);
     return 1;
 }
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
