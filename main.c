@@ -1,15 +1,56 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <libnetfilter_queue/libnetfilter_queue.h>
-#include <net/ethernet.h>
-#include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <arpa/inet.h>
-#include <libnetfilter_queue/linux_nfnetlink_queue.h>
-#include <fcntl.h>    
-#include <errno.h>   
-#include <unistd.h>   
+#include <net/if.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
+#include <net/ethernet.h>
+#include <libnetfilter_queue/libnetfilter_queue.h>
+#include <sys/wait.h>
 
+//Hàm thiết lập IP tĩnh cho giao diện
+int set_interface_ip(char *ifname, char *ip, char *netmask) {
+    int sock_id = socket (AF_INET, SOCK_DGRAM, 0);
+    if ( sock_id < 0) {
+        printf ("[ERROR] Can not open socket\n");
+        return 0;
+    }
+
+    struct ifreq ifr;  // CTDL trên user space dùng để tương tác vs các giao diện mạng qia ioctl
+    strncpy(ifr.ifr_name, ifname, IFNAMSIZ);    
+    struct sockaddr_in *addr = (struct sockaddr_in *)&ifr.ifr_addr; // con trỏ addr quản lý vùng nhớ địa chỉ cuả ifr.ifr_addr
+    ifr.ifr_addr.sa_family = AF_INET;
+    inet_pton(AF_INET, ip, &addr->sin_addr);
+    if (ioctl (sock_id, SIOCSIFADDR, &ifr) < 0) {
+        printf ("[ERROR] Can not set IP\n");
+        return 0;
+    }
+
+    addr = (struct sockaddr_in *)&ifr.ifr_netmask;
+    ifr.ifr_netmask.sa_family = AF_INET;
+    inet_pton (AF_INET, netmask, &addr->sin_addr);
+    if (ioctl(sock_id, SIOCSIFNETMASK, &ifr) < 0) {
+        printf ("[ERROR] Can not set IP\n");
+        return 0;        
+    }
+
+    ifr.ifr_flags |= IFF_UP;
+    if (ioctl(sock_id, SIOCSIFFLAGS, &ifr) < 0) {
+        printf ("[ERROR] Can not set interface up\n");
+        return 0;             
+    }
+
+    close (sock_id);
+    printf ("Interface %s is enabled with IP: %d, Netmask: %s\n", ifname, ip, netmask);
+    return 1;
+}
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
     if (ph) {
@@ -91,115 +132,84 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
     return 0;
 }
 
-// static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
-//     if (!nfa) {
-//         printf("Không có dữ liệu gói tin\n");
-//         return 0;
-//     }
-//     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
-//     if (ph) {
-//         unsigned int id = ntohl(ph->packet_id);
-//         printf("Gói tin ID: %u nhận được\n", id);
-
-//         unsigned char *payload;
-//         int payload_len = nfq_get_payload(nfa, &payload);
-//         printf("Payload length: %d\n", payload_len);
-
-//         if (payload_len >= sizeof(struct iphdr)) {
-//             struct iphdr *ip = (struct iphdr *)payload;
-//             int ip_header_len = ip->ihl * 4;
-//             if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= payload_len) {
-//                 uint16_t ip_total_len = ntohs(ip->tot_len);
-//                 printf("Nguồn: %s, Độ dài header IP: %d, Tổng độ dài IP: %u\n",
-//                        inet_ntoa(*(struct in_addr *)&ip->saddr), ip_header_len, ip_total_len);
-
-//                 if (ip->protocol == IPPROTO_ICMP && payload_len >= ip_header_len + sizeof(struct icmphdr)) {
-//                     struct icmphdr *icmp = (struct icmphdr *)(payload + ip_header_len);
-//                     printf("Gói tin ICMP, Type: %d, Code: %d\n", icmp->type, icmp->code);
-//                     if (icmp->type == 8 || icmp->type == 0) {
-//                         printf("Bản tin Ping (Echo %s)\n", icmp->type == 8 ? "Request" : "Reply");
-//                     }
-//                 }
-//             } else {
-//                 printf("Header IP không hợp lệ\n");
-//             }
-//         } else {
-//             printf("Payload quá ngắn hoặc không chứa header IP\n");
-//         }
-
-//         return nfq_set_verdict(qh, id, 1, 0, NULL); // Sử dụng NF_ACCEPT
-//     }
-//     return 0;
-// }
-
 int main() {
-    struct nfq_handle *h = nfq_open();
-    if (!h) {
-        perror("Lỗi mở netfilter");
-        return -1;
-    }
-    printf("Handle opened successfully\n");
+    // struct nfq_handle *h = nfq_open();
+    // if (!h) {
+    //     perror("Lỗi mở netfilter");
+    //     return -1;
+    // }
+    // printf("Handle opened successfully\n");
 
-    if (nfq_unbind_pf(h, AF_INET) < 0) {
-        perror("Lỗi unbind");
-        nfq_close(h);
-        return -1;
-    }
-    printf("Unbind successful\n");
+    // if (nfq_unbind_pf(h, AF_INET) < 0) {
+    //     perror("Lỗi unbind");
+    //     nfq_close(h);
+    //     return -1;
+    // }
+    // printf("Unbind successful\n");
 
-    if (nfq_bind_pf(h, AF_INET) < 0) {
-        perror("Lỗi bind");
-        nfq_close(h);
-        return -1;
-    }
-    printf("Bind successful\n");
+    // if (nfq_bind_pf(h, AF_INET) < 0) {
+    //     perror("Lỗi bind");
+    //     nfq_close(h);
+    //     return -1;
+    // }
+    // printf("Bind successful\n");
 
-    struct nfq_q_handle *qh = nfq_create_queue(h, 0, &cb, NULL);
-    if (!qh) {
-        perror("Lỗi tạo queue");
-        nfq_close(h);
-        return -1;
-    }
-    printf("Queue created successfully\n");
+    // struct nfq_q_handle *qh = nfq_create_queue(h, 0, &cb, NULL);
+    // if (!qh) {
+    //     perror("Lỗi tạo queue");
+    //     nfq_close(h);
+    //     return -1;
+    // }
+    // printf("Queue created successfully\n");
 
 
-    // Set the queue mode to copy packets to userspace
-    if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
-        fprintf(stderr, "Can't set packet_copy mode\n");
-        exit(1);
-    }
+    // // Set the queue mode to copy packets to userspace
+    // if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
+    //     fprintf(stderr, "Can't set packet_copy mode\n");
+    //     exit(1);
+    // }
     
-    int fd = nfq_fd(h);
-    if (fd < 0) {
-        perror("Lỗi lấy file descriptor");
-        nfq_destroy_queue(qh);
-        nfq_close(h);
-        return -1;
+    // int fd = nfq_fd(h);
+    // if (fd < 0) {
+    //     perror("Lỗi lấy file descriptor");
+    //     nfq_destroy_queue(qh);
+    //     nfq_close(h);
+    //     return -1;
+    // }
+    // printf("File descriptor: %d\n", fd);
+
+    // char recv_buf[4096];
+    // int rv;
+    // printf("Bắt đầu bắt bản tin\n");
+    // int flags = fcntl(fd, F_GETFL, 0);
+    // fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+    // while (1) {
+    //     rv = recv(fd, recv_buf, sizeof(recv_buf), 0);
+    //     if (rv < 0) {
+    //         if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    //             printf("Chưa có dữ liệu, chờ...\n");
+    //             sleep(1); // Chờ 1 giây trước khi thử lại
+    //             continue;
+    //         }
+    //         perror("Lỗi recv");
+    //         break;
+    //     }
+    //     printf("Nhận dữ liệu, kích thước: %d byte\n", rv);
+    //     nfq_handle_packet(h, recv_buf, rv);
+    // }
+
+    // nfq_destroy_queue(qh);
+    // nfq_close(h);
+    // return 0;
+
+    printf ("Start setting interface up\n");
+    if (set_interface_ip("wlan0", "192.168.2.1", "255.255.255.0")) {
+        printf ("Setting OK\n");
+        return 1;
     }
-    printf("File descriptor: %d\n", fd);
-
-    char recv_buf[4096];
-    int rv;
-    printf("Bắt đầu bắt bản tin\n");
-    int flags = fcntl(fd, F_GETFL, 0);
-    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-
-    while (1) {
-        rv = recv(fd, recv_buf, sizeof(recv_buf), 0);
-        if (rv < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                printf("Chưa có dữ liệu, chờ...\n");
-                sleep(1); // Chờ 1 giây trước khi thử lại
-                continue;
-            }
-            perror("Lỗi recv");
-            break;
-        }
-        printf("Nhận dữ liệu, kích thước: %d byte\n", rv);
-        nfq_handle_packet(h, recv_buf, rv);
+    else {
+        printf ("Setting failed\n");
+        return 0;
     }
-
-    nfq_destroy_queue(qh);
-    nfq_close(h);
-    return 0;
 }
