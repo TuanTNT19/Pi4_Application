@@ -25,37 +25,37 @@ int set_interface_ip(char *ifname, char *ip, char *netmask) {
 
     struct ifreq ifr;  // CTDL trên user space dùng để tương tác vs các giao diện mạng qia ioctl
     strncpy(ifr.ifr_name, ifname, IFNAMSIZ);    
-    // struct sockaddr_in *addr = (struct sockaddr_in *)&ifr.ifr_addr; // con trỏ addr quản lý vùng nhớ địa chỉ cuả ifr.ifr_addr
-    // ifr.ifr_addr.sa_family = AF_INET;
-    // inet_pton(AF_INET, ip, &addr->sin_addr);
-    // if (ioctl (sock_id, SIOCSIFADDR, &ifr) < 0) {
-    //     printf ("[ERROR] Can not set IP\n");
-    //     return 0;
-    // }
-
-    // addr = (struct sockaddr_in *)&ifr.ifr_netmask;
-    // ifr.ifr_netmask.sa_family = AF_INET;
-    // inet_pton (AF_INET, netmask, &addr->sin_addr);
-    // if (ioctl(sock_id, SIOCSIFNETMASK, &ifr) < 0) {
-    //     printf ("[ERROR] Can not set IP\n");
-    //     return 0;        
-    // }
-
-
-
+    struct sockaddr_in *addr = (struct sockaddr_in *)&ifr.ifr_addr; // con trỏ addr quản lý vùng nhớ địa chỉ cuả ifr.ifr_addr
     ifr.ifr_addr.sa_family = AF_INET;
-    inet_pton(AF_INET, ip, &ifr.ifr_addr.sa_data);
+    inet_pton(AF_INET, ip, &addr->sin_addr);
     if (ioctl (sock_id, SIOCSIFADDR, &ifr) < 0) {
         printf ("[ERROR] Can not set IP\n");
         return 0;
     }
 
+    addr = (struct sockaddr_in *)&ifr.ifr_netmask;
     ifr.ifr_netmask.sa_family = AF_INET;
-    inet_pton (AF_INET, netmask, &ifr.ifr_netmask.sa_data);
+    inet_pton (AF_INET, netmask, &addr->sin_addr);
     if (ioctl(sock_id, SIOCSIFNETMASK, &ifr) < 0) {
-        printf ("[ERROR] Can not set Mask\n");
+        printf ("[ERROR] Can not set mask\n");
         return 0;        
-    }    
+    }
+
+
+
+    // ifr.ifr_addr.sa_family = AF_INET;
+    // inet_pton(AF_INET, ip, &ifr.ifr_addr.sa_data);
+    // if (ioctl (sock_id, SIOCSIFADDR, &ifr) < 0) {
+    //     printf ("[ERROR] Can not set IP\n");
+    //     return 0;
+    // }
+
+    // ifr.ifr_netmask.sa_family = AF_INET;
+    // inet_pton (AF_INET, netmask, &ifr.ifr_netmask.sa_data);
+    // if (ioctl(sock_id, SIOCSIFNETMASK, &ifr) < 0) {
+    //     printf ("[ERROR] Can not set Mask\n");
+    //     return 0;        
+    // }    
 
     ifr.ifr_flags |= IFF_UP;
     if (ioctl(sock_id, SIOCSIFFLAGS, &ifr) < 0) {
@@ -73,7 +73,7 @@ int set_interface_ip(char *ifname, char *ip, char *netmask) {
     printf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
            mac_addr[0], mac_addr[1], mac_addr[2],
            mac_addr[3], mac_addr[4], mac_addr[5]);
-           
+
     return 1;
 }
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
