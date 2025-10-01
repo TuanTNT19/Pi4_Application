@@ -245,80 +245,80 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
 }
 
 int main() {
-    // struct nfq_handle *h = nfq_open();
-    // if (!h) {
-    //     perror("Lỗi mở netfilter");
-    //     return -1;
-    // }
-    // printf("Handle opened successfully\n");
+    struct nfq_handle *h = nfq_open();
+    if (!h) {
+        perror("Lỗi mở netfilter");
+        return -1;
+    }
+    printf("Handle opened successfully\n");
 
-    // if (nfq_unbind_pf(h, AF_INET) < 0) {
-    //     perror("Lỗi unbind");
-    //     nfq_close(h);
-    //     return -1;
-    // }
-    // printf("Unbind successful\n");
+    if (nfq_unbind_pf(h, AF_INET) < 0) {
+        perror("Lỗi unbind");
+        nfq_close(h);
+        return -1;
+    }
+    printf("Unbind successful\n");
 
-    // if (nfq_bind_pf(h, AF_INET) < 0) {
-    //     perror("Lỗi bind");
-    //     nfq_close(h);
-    //     return -1;
-    // }
-    // printf("Bind successful\n");
+    if (nfq_bind_pf(h, AF_INET) < 0) {
+        perror("Lỗi bind");
+        nfq_close(h);
+        return -1;
+    }
+    printf("Bind successful\n");
 
-    // struct nfq_q_handle *qh = nfq_create_queue(h, 0, &cb, NULL);
-    // if (!qh) {
-    //     perror("Lỗi tạo queue");
-    //     nfq_close(h);
-    //     return -1;
-    // }
-    // printf("Queue created successfully\n");
+    struct nfq_q_handle *qh = nfq_create_queue(h, 0, &cb, NULL);
+    if (!qh) {
+        perror("Lỗi tạo queue");
+        nfq_close(h);
+        return -1;
+    }
+    printf("Queue created successfully\n");
 
 
-    // // Set the queue mode to copy packets to userspace
-    // if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
-    //     fprintf(stderr, "Can't set packet_copy mode\n");
-    //     exit(1);
-    // }
+    // Set the queue mode to copy packets to userspace
+    if (nfq_set_mode(qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
+        fprintf(stderr, "Can't set packet_copy mode\n");
+        exit(1);
+    }
     
-    // int fd = nfq_fd(h);
-    // if (fd < 0) {
-    //     perror("Lỗi lấy file descriptor");
-    //     nfq_destroy_queue(qh);
-    //     nfq_close(h);
-    //     return -1;
-    // }
-    // printf("File descriptor: %d\n", fd);
+    int fd = nfq_fd(h);
+    if (fd < 0) {
+        perror("Lỗi lấy file descriptor");
+        nfq_destroy_queue(qh);
+        nfq_close(h);
+        return -1;
+    }
+    printf("File descriptor: %d\n", fd);
 
-    // char recv_buf[4096];
-    // int rv;
-    // printf("Bắt đầu bắt bản tin\n");
-    // int flags = fcntl(fd, F_GETFL, 0);
-    // fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    char recv_buf[4096];
+    int rv;
+    printf("Bắt đầu bắt bản tin\n");
+    int flags = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
-    // while (1) {
-    //     rv = recv(fd, recv_buf, sizeof(recv_buf), 0);
-    //     if (rv < 0) {
-    //         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-    //             printf("Chưa có dữ liệu, chờ...\n");
-    //             sleep(1); // Chờ 1 giây trước khi thử lại
-    //             continue;
-    //         }
-    //         perror("Lỗi recv");
-    //         break;
-    //     }
-    //     printf("Nhận dữ liệu, kích thước: %d byte\n", rv);
-    //     nfq_handle_packet(h, recv_buf, rv);
-    // }
+    while (1) {
+        rv = recv(fd, recv_buf, sizeof(recv_buf), 0);
+        if (rv < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                printf("Chưa có dữ liệu, chờ...\n");
+                sleep(1); // Chờ 1 giây trước khi thử lại
+                continue;
+            }
+            perror("Lỗi recv");
+            break;
+        }
+        printf("Nhận dữ liệu, kích thước: %d byte\n", rv);
+        nfq_handle_packet(h, recv_buf, rv);
+    }
 
-    // nfq_destroy_queue(qh);
-    // nfq_close(h);
+    nfq_destroy_queue(qh);
+    nfq_close(h);
     // return 0;
 
-    printf ("Start main\n");
-    set_interface_ip("wlan0", "192.168.2.1", "255.255.255.0");
-    enable_ip_forward();
-    start_hostapd("wlan0", "My_Pi4_Wifi", "08122002");
-    start_dhcp_server("wlan0", "192.168.2.2", "192.168.2.100", "192.168.2.1");
+    // printf ("Start main\n");
+    // set_interface_ip("wlan0", "192.168.2.1", "255.255.255.0");
+    // enable_ip_forward();
+    // start_hostapd("wlan0", "My_Pi4_Wifi", "08122002");
+    // start_dhcp_server("wlan0", "192.168.2.2", "192.168.2.100", "192.168.2.1");
     return 1;
 }
