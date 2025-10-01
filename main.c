@@ -19,7 +19,7 @@
 int set_interface_ip(char *ifname, char *ip, char *netmask) {
     int sock_id = socket (AF_INET, SOCK_DGRAM, 0);
     if ( sock_id < 0) {
-        printf ("[ERROR] Can not open socket\n");
+        printf ("[ERROR] Can not open socket when setting interface IP\n");
         return 0;
     }
 
@@ -31,6 +31,7 @@ int set_interface_ip(char *ifname, char *ip, char *netmask) {
     inet_pton(AF_INET, ip, &addr->sin_addr);
     if (ioctl (sock_id, SIOCSIFADDR, &ifr) < 0) {
         printf ("[ERROR] Can not set IP\n");
+        close(sock_id);
         return 0;
     }
 
@@ -39,12 +40,14 @@ int set_interface_ip(char *ifname, char *ip, char *netmask) {
     inet_pton (AF_INET, netmask, &addr->sin_addr);
     if (ioctl(sock_id, SIOCSIFNETMASK, &ifr) < 0) {
         printf ("[ERROR] Can not set mask\n");
+        close(sock_id);
         return 0;        
     }
 
     ifr.ifr_flags |= IFF_UP;
     if (ioctl(sock_id, SIOCSIFFLAGS, &ifr) < 0) {
         printf ("[ERROR] Can not set interface up\n");
+        close(sock_id);
         return 0;             
     }
 
@@ -53,24 +56,111 @@ int set_interface_ip(char *ifname, char *ip, char *netmask) {
     // LẤy ra MAC để xem thử
     unsigned char mac_addr[6];
     if (ioctl(sock_id, SIOCGIFHWADDR, &ifr) < 0) {
-        perror("[ERROR] Can not get MAC address");
+        printf("[ERROR] Can not get MAC address\n");
         close(sock_id);
         return -1;
     }
-    if (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
-        fprintf(stderr, "[ERROR] Interface %s is not Ethernet/Wi-Fi (sa_family=%d)\n",
-                ifname, ifr.ifr_hwaddr.sa_family);
-        close(sock_id);
-        return -1;
-    }
+
     memcpy(mac_addr, ifr.ifr_hwaddr.sa_data, 6);
     printf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
            mac_addr[0], mac_addr[1], mac_addr[2],
            mac_addr[3], mac_addr[4], mac_addr[5]);
-           
-            close (sock_id);
+
+    close (sock_id);
     return 1;
 }
+
+// Bật IP forwarding 
+int enable_ip_forward() {
+    int fd = open ("/proc/sys/net/ipv4/ip_forward", O_WRONLY);
+    if ( fd < 0) {
+        printf ("[ERROR]: Failed to open ip_forward file\n");
+        return 0;
+    }
+
+    if (write (fd, "1", 1) < 0) {
+        printf ("[ERROR]: Failed to enable IP forward\n");
+        close (fd);
+        return 0;        
+    }
+
+    printf ("Enable IP forward\n");
+    close (fd);
+    return 1;
+}
+
+// Khởi động hostapd 
+int start_hostapd(const char *interface, const char *wifi_name, const char *wifi_pass) {
+    // Đường dẫn thư mục và file
+    const char *dir_path = "/etc/hostapd";
+    const char *conf_path = "/etc/hostapd/hostapd.conf";
+    char command[256];
+    char buffer[512];
+    int fd;
+
+    // Tạo thư mục /etc/hostapd bằng mkdir -p
+    snprintf(command, sizeof(command), "mkdir -p %s", dir_path);
+    if (system(command) != 0) {
+        printf ("[ERROR]: Failed to create a folder at %s\n", dir_path);
+        return 0;
+    }
+
+    // Tạo hoặc ghi đè file hostapd.conf
+    fd = open(conf_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd == -1) {
+        printf ("[ERROR]: Failed to create or open file %s\n", conf_path);
+        return -1;
+    }
+
+    // Chuẩn bị nội dung cấu hình
+    snprintf(buffer, sizeof(buffer),
+             "interface=%s\n"
+             "driver=nl80211\n"
+             "ssid=%s\n"
+             "hw_mode=g\n"
+             "channel=6\n"
+             "wmm_enabled=1\n"
+             "macaddr_acl=0\n"
+             "auth_algs=1\n"
+             "ignore_broadcast_ssid=0\n"
+             "wpa=2\n"
+             "wpa_passphrase=%s\n"
+             "wpa_key_mgmt=WPA-PSK\n"
+             "rsn_pairwise=CCMP\n",
+             interface, wifi_name, wifi_pass);
+
+    // Ghi nội dung vào file
+    ssize_t len = strlen(buffer);
+    if (write(fd, buffer, len) < 0) {
+        printf ("[ERROR]: Failed write data to hostapd config file \n");
+        close(fd);
+        return 0;
+    }
+
+    close (fd);
+
+    // Chạy lệnh hostapd
+    snprintf(command, sizeof(command), "hostapd %s &", conf_path);
+    if (system(command) != 0) {
+        printf ("[ERROR]: Failed to start hostapd \n");
+        return 0;
+    }
+
+    printf("Started interface %s, SSID %s\n", interface, wifi_name);
+    return 1;
+}
+
+int start_dhcp_server(char *interface, char *ip_start, char *ip_end, char *ip_gateway) {
+    char command[256];
+    system("/etc/init.d/dnsmasq stop");
+    snprintf(command, sizeof(command), "dnsmasq --interface=%s --dhcp-range=%s,%s,12h --dhcp-option=3,%s &", interface, ip_start, ip_end, ip_gateway);
+    if (system(command) != 0) {
+        printf ("[ERROR]: Failed to start dhcp server by dnsmasq \n");
+        return 0;
+    }
+    return 1;
+}
+
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
     if (ph) {
@@ -223,13 +313,10 @@ int main() {
     // nfq_close(h);
     // return 0;
 
-    printf ("Start setting interface up\n");
-    if (set_interface_ip("wlan0", "192.168.2.1", "255.255.255.0")) {
-        printf ("Setting OK\n");
-        return 1;
-    }
-    else {
-        printf ("Setting failed\n");
-        return 0;
-    }
+    printf ("Start main\n");
+    set_interface_ip("wlan0", "192.168.2.1", "255.255.255.0");
+    enable_ip_forward();
+    start_hostapd("wlan0", "My_Pi4_Wifi", "08122002");
+    start_dhcp_server("wlan0", "192.168.2.2", "192.168.2.100", "192.168.2.1");
+    return 1;
 }
