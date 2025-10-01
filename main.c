@@ -153,6 +153,7 @@ int start_hostapd(const char *interface, const char *wifi_name, const char *wifi
 int start_dhcp_server(char *interface, char *ip_start, char *ip_end, char *ip_gateway) {
     char command[256];
     system("/etc/init.d/dnsmasq stop");
+    system("killall dnsmasq");
     snprintf(command, sizeof(command), "dnsmasq --interface=%s --dhcp-range=%s,%s,12h --dhcp-option=3,%s &", interface, ip_start, ip_end, ip_gateway);
     if (system(command) != 0) {
         printf ("[ERROR]: Failed to start dhcp server by dnsmasq \n");
