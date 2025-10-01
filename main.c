@@ -158,6 +158,7 @@ int start_dhcp_server(char *interface, char *ip_start, char *ip_end, char *ip_ga
         printf ("[ERROR]: Failed to start dhcp server by dnsmasq \n");
         return 0;
     }
+    printf("DHCP server started with Ip range %s to %s\n", ip_start, ip_end);
     return 1;
 }
 
