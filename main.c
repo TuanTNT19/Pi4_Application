@@ -246,7 +246,6 @@ int start_dhcp_server(char *interface, char *ip_start, char *ip_end, char *ip_ga
 
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
     unsigned char *payload;
-    char interface_name[10]
     int len = nfq_get_payload(nfa, &payload);
     if ( len <=0 ) {
         printf ("[ERROR]: Failed to get Netfilter payload from queue\n");
@@ -257,17 +256,6 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
     if (ph) {
         unsigned int id = ntohs(ph->packet_id);
         struct iphdr *ip  = (struct iphdr *)payload;
-
-        uint32_t interface_id = nfq_get_outdev(nfa);
-        if (!nfq_get_devname(interface_id, nfa, interface_name, sizeof(interface_name))) {
-            printf("Interface name : %s with ID : %d\n", interface_name, interface_id);
-        }
-
-        if (strcmp (interface_name, "eth0")) {
-            printf ("Interface is eth0 \n");
-            return nfq_set_verdict(qh, id, 1, 0, NULL);
-        }
-
         uint32_t host_saddr = ip->saddr;
         uint32_t host_daddr = ip->daddr;
         char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
