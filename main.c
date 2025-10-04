@@ -245,6 +245,7 @@ int start_dhcp_server(char *interface, char *ip_start, char *ip_end, char *ip_ga
 // }
 
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
+    printf ("THis is callback function in main\n");
     unsigned char *payload;
     int len = nfq_get_payload(nfa, &payload);
     if ( len <=0 ) {
