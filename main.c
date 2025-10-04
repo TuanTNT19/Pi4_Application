@@ -245,6 +245,10 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
 }
 
 int main() {
+    set_interface_ip("wlan0", "192.168.2.1", "255.255.255.0");
+    enable_ip_forward();
+    start_hostapd("wlan0", "My_Pi4_Wifi", "08122002");
+    start_dhcp_server("wlan0", "192.168.2.2", "192.168.2.100", "192.168.2.1");
     struct nfq_handle *h = nfq_open();
     if (!h) {
         perror("Lỗi mở netfilter");
@@ -316,9 +320,5 @@ int main() {
     // return 0;
 
     // printf ("Start main\n");
-    // set_interface_ip("wlan0", "192.168.2.1", "255.255.255.0");
-    // enable_ip_forward();
-    // start_hostapd("wlan0", "My_Pi4_Wifi", "08122002");
-    // start_dhcp_server("wlan0", "192.168.2.2", "192.168.2.100", "192.168.2.1");
     return 1;
 }
