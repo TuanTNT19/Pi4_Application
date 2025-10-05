@@ -271,11 +271,11 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
         } 
 
         // Quá trình NAT
-        printf ("Check in NAT process start\n")
+        printf ("Check in NAT process start\n");
         uint32_t temp_ip;
         inet_pton(AF_INET, "192.168.1.200", &temp_ip);
         ip->saddr = temp_ip;
-        printf ("Check in NAT process end\n")
+        printf ("Check in NAT process end\n");
         return 1;
     }
     return 0;
