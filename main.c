@@ -163,122 +163,125 @@ int start_dhcp_server(char *interface, char *ip_start, char *ip_end, char *ip_ga
     return 1;
 }
 
-static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
-    struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
-    if (ph) {
-        unsigned int id = ntohl(ph->packet_id);
-        printf("Gói tin ID: %u\n", id);
-
-        unsigned char *payload;
-        int payload_len = nfq_get_payload(nfa, &payload);
-         printf ("CHECKING: payload len: %d\n", payload_len);
-
-        // Ưu tiên kiểm tra header IP (trường hợp không có Ethernet)
-        if (payload_len >= sizeof(struct iphdr)) {
-            struct iphdr *ip = (struct iphdr *)payload;
-            int ip_header_len = ip->ihl * 4; // Độ dài header IP thực tế
-            // if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= payload_len) {
-            uint16_t ip_total_len = ntohs(ip->tot_len);
-            if (ip_total_len == payload_len) {
-                uint32_t host_saddr = ip->saddr;
-                uint32_t host_daddr = ip->daddr;
-                char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
-                char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
-                inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
-                inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
-                printf("Gói tin Bắt đầu từ header IP tại offset 0, Nguồn: %s, Đích: %s, Độ dài header IP: %d byte, Tổng độ dài IP: %u byte\n",
-                       s_ip, d_ip, ip_header_len, ip_total_len);
-
-                if (payload_len >= ip_total_len) {
-                    printf("Dữ liệu đầy đủ: %d byte\n", payload_len);
-                } else {
-                    printf("Dữ liệu không đầy đủ, payload_len: %d, ip_total_len: %u\n",
-                           payload_len, ip_total_len);
-                }
-
-                // Kiểm tra header Ethernet nếu đủ dài
-                if (payload_len >= sizeof(struct ethhdr) + ip_total_len) {
-                    struct ethhdr *eth = (struct ethhdr *)payload;
-                    if (ntohs(eth->h_proto) == ETH_P_IP) {
-                        printf("Có header Ethernet, IP tại offset 14\n");
-                        printf("Header Ethernet không khớp IP, h_proto: %04x\n", ntohs(eth->h_proto));
-                    }
-                }
-                free (s_ip);
-                free (d_ip);
-        } else {
-            struct ethhdr *eth = (struct ethhdr *)payload;
-            if (ntohs(eth->h_proto) == ETH_P_IP && payload_len >= sizeof(struct ethhdr) + sizeof(struct iphdr)) {
-                struct iphdr *ip = (struct iphdr *)(payload + sizeof(struct ethhdr));
-                int ip_header_len = ip->ihl * 4;
-                if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= (payload_len - sizeof(struct ethhdr))) {
-                    uint16_t ip_total_len = ntohs(ip->tot_len);
-                    uint32_t host_saddr = ip->saddr;
-                    uint32_t host_daddr = ip->daddr;
-                    char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
-                    char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
-                    inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
-                    inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
-                    printf("Bắt đầu từ header Ethernet, IP tại offset 14, Nguồn: %s, Đích: %s, Độ dài header IP: %d byte, Tổng độ dài IP: %u byte\n",
-                           s_ip, d_ip, ip_header_len, ip_total_len);
-                    if (payload_len >= sizeof(struct ethhdr) + ip_total_len) {
-                        printf("Dữ liệu đầy đủ: %d byte\n", payload_len);
-                    } else {
-                        printf("Dữ liệu không đầy đủ, payload_len: %d, ip_total_len: %d\n",
-                               payload_len, ip_total_len + sizeof(struct ethhdr));
-                    }
-
-                    free (s_ip);
-                    free (d_ip);
-                } else {
-                    printf("Header IP không hợp lệ sau Ethernet.\n");
-                }
-            } else {
-                printf("Header Ethernet không phải IP hoặc không đủ dữ liệu, h_proto: %04x\n", ntohs(eth->h_proto));
-            }
-        }
-        
-        printf ("Callback : Before verdict\n");
-        nfq_set_verdict(qh, id, 1, 0, NULL);
-        printf ("Callback : After verdict\n");
-        return 1;
-    }
-    }
-    return 0;
-}
-
 // static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
-//     printf ("THis is callback function in main\n");
-//     unsigned char *payload;
-//     int len = nfq_get_payload(nfa, &payload);
-//     if ( len <=0 ) {
-//         printf ("[ERROR]: Failed to get Netfilter payload from queue\n");
-//         return 0;
-//     }
-
 //     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
 //     if (ph) {
-//         unsigned int id = ntohs(ph->packet_id);
-//         struct iphdr *ip  = (struct iphdr *)payload;
-//         uint32_t host_saddr = ip->saddr;
-//         uint32_t host_daddr = ip->daddr;
-//         char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
-//         char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
-//         inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
-//         inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
-//         if (strncmp (s_ip, "192.168.2.x", 9)) {
-//             printf ("IP source is not belong to eth0 IP range\n");
-//             return nfq_set_verdict(qh, id, 1, 0, NULL);
-//         } 
+//         unsigned int id = ntohl(ph->packet_id);
+//         printf("Gói tin ID: %u\n", id);
 
-//         // Quá trình NAT
-//         uint32_t temp_ip;
-//         inet_pton(AF_INET, "192.168.1.200", &temp_ip);
-//         ip->saddr = temp_ip;
+//         unsigned char *payload;
+//         int payload_len = nfq_get_payload(nfa, &payload);
+//          printf ("CHECKING: payload len: %d\n", payload_len);
+
+//         // Ưu tiên kiểm tra header IP (trường hợp không có Ethernet)
+//         if (payload_len >= sizeof(struct iphdr)) {
+//             struct iphdr *ip = (struct iphdr *)payload;
+//             int ip_header_len = ip->ihl * 4; // Độ dài header IP thực tế
+//             // if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= payload_len) {
+//             uint16_t ip_total_len = ntohs(ip->tot_len);
+//             if (ip_total_len == payload_len) {
+//                 uint32_t host_saddr = ip->saddr;
+//                 uint32_t host_daddr = ip->daddr;
+//                 char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
+//                 char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
+//                 inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
+//                 inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
+//                 printf("Gói tin Bắt đầu từ header IP tại offset 0, Nguồn: %s, Đích: %s, Độ dài header IP: %d byte, Tổng độ dài IP: %u byte\n",
+//                        s_ip, d_ip, ip_header_len, ip_total_len);
+
+//                 if (payload_len >= ip_total_len) {
+//                     printf("Dữ liệu đầy đủ: %d byte\n", payload_len);
+//                 } else {
+//                     printf("Dữ liệu không đầy đủ, payload_len: %d, ip_total_len: %u\n",
+//                            payload_len, ip_total_len);
+//                 }
+
+//                 // Kiểm tra header Ethernet nếu đủ dài
+//                 if (payload_len >= sizeof(struct ethhdr) + ip_total_len) {
+//                     struct ethhdr *eth = (struct ethhdr *)payload;
+//                     if (ntohs(eth->h_proto) == ETH_P_IP) {
+//                         printf("Có header Ethernet, IP tại offset 14\n");
+//                         printf("Header Ethernet không khớp IP, h_proto: %04x\n", ntohs(eth->h_proto));
+//                     }
+//                 }
+//                 free (s_ip);
+//                 free (d_ip);
+//         } else {
+//             struct ethhdr *eth = (struct ethhdr *)payload;
+//             if (ntohs(eth->h_proto) == ETH_P_IP && payload_len >= sizeof(struct ethhdr) + sizeof(struct iphdr)) {
+//                 struct iphdr *ip = (struct iphdr *)(payload + sizeof(struct ethhdr));
+//                 int ip_header_len = ip->ihl * 4;
+//                 if (ip->version == 4 && ip->ihl >= 5 && ip_header_len <= (payload_len - sizeof(struct ethhdr))) {
+//                     uint16_t ip_total_len = ntohs(ip->tot_len);
+//                     uint32_t host_saddr = ip->saddr;
+//                     uint32_t host_daddr = ip->daddr;
+//                     char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
+//                     char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
+//                     inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
+//                     inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
+//                     printf("Bắt đầu từ header Ethernet, IP tại offset 14, Nguồn: %s, Đích: %s, Độ dài header IP: %d byte, Tổng độ dài IP: %u byte\n",
+//                            s_ip, d_ip, ip_header_len, ip_total_len);
+//                     if (payload_len >= sizeof(struct ethhdr) + ip_total_len) {
+//                         printf("Dữ liệu đầy đủ: %d byte\n", payload_len);
+//                     } else {
+//                         printf("Dữ liệu không đầy đủ, payload_len: %d, ip_total_len: %d\n",
+//                                payload_len, ip_total_len + sizeof(struct ethhdr));
+//                     }
+
+//                     free (s_ip);
+//                     free (d_ip);
+//                 } else {
+//                     printf("Header IP không hợp lệ sau Ethernet.\n");
+//                 }
+//             } else {
+//                 printf("Header Ethernet không phải IP hoặc không đủ dữ liệu, h_proto: %04x\n", ntohs(eth->h_proto));
+//             }
+//         }
+        
+//         printf ("Callback : Before verdict\n");
+//         nfq_set_verdict(qh, id, 1, 0, NULL);
+//         printf ("Callback : After verdict\n");
 //         return 1;
+//     }
 //     }
 //     return 0;
 // }
+
+static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
+    printf ("THis is callback function in main\n");
+    unsigned char *payload;
+    int len = nfq_get_payload(nfa, &payload);
+    if ( len <=0 ) {
+        printf ("[ERROR]: Failed to get Netfilter payload from queue\n");
+        return 0;
+    }
+
+    struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
+    if (ph) {
+        unsigned int id = ntohs(ph->packet_id);
+        struct iphdr *ip  = (struct iphdr *)payload;
+        uint32_t host_saddr = ip->saddr;
+        uint32_t host_daddr = ip->daddr;
+        char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
+        char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
+        if (strncmp (s_ip, "192.168.2.x", 9)) {
+            printf ("IP source is not belong to eth0 IP range\n");
+            printf ("Callback : not belong IP range: Before verdict\n");
+            nfq_set_verdict(qh, id, 1, 0, NULL);
+            printf ("Callback : not belong IP range: After verdict\n");
+            return 1;
+        } 
+
+        // Quá trình NAT
+        uint32_t temp_ip;
+        inet_pton(AF_INET, "192.168.1.200", &temp_ip);
+        ip->saddr = temp_ip;
+        return 1;
+    }
+    return 0;
+}
 
 int main() {
     set_interface_ip("wlan0", "192.168.2.1", "255.255.255.0");
