@@ -239,8 +239,9 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
         }
         
         printf ("Callback : Before verdict\n");
-        return nfq_set_verdict(qh, id, 1, 0, NULL);
+        nfq_set_verdict(qh, id, 1, 0, NULL);
         printf ("Callback : After verdict\n");
+        return 1;
     }
     }
     return 0;
