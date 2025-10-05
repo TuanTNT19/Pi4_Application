@@ -163,65 +163,65 @@ int start_dhcp_server(char *interface, char *ip_start, char *ip_end, char *ip_ga
     return 1;
 }
 
-static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
-    struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
-    if (ph) {
-        unsigned int id = ntohl(ph->packet_id);
-        printf("Gói tin ID: %u\n", id);
-
-        unsigned char *payload;
-        int payload_len = nfq_get_payload(nfa, &payload);
-         printf ("CHECKING: payload len: %d\n", payload_len);
-
-        // Ưu tiên kiểm tra header IP (trường hợp không có Ethernet)
-        if (payload_len >= sizeof(struct iphdr)) {
-
-        printf ("Callback : Before verdict\n");
-        nfq_set_verdict(qh, id, 1, 0, NULL);
-        printf ("Callback : After verdict\n");
-        return 1;
-    }
-    }
-    return 0;
-}
-
 // static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
-//     printf ("THis is callback function in main\n");
-//     unsigned char *payload;
-//     int len = nfq_get_payload(nfa, &payload);
-//     if ( len <=0 ) {
-//         printf ("[ERROR]: Failed to get Netfilter payload from queue\n");
-//         return 0;
-//     }
-
 //     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
 //     if (ph) {
-//         unsigned int id = ntohs(ph->packet_id);
-//         struct iphdr *ip  = (struct iphdr *)payload;
-//         uint32_t host_saddr = ip->saddr;
-//         uint32_t host_daddr = ip->daddr;
-//         char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
-//         char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
-//         inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
-//         inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
-//         printf("IP Nguồn: %s, Đích: %s \n",
-//                             s_ip, d_ip);
-//         if (strncmp (s_ip, "192.168.2.x", 9)) {
-//             printf ("IP source is not belong to eth0 IP range\n");
-//             printf ("Callback : not belong IP range: Before verdict\n");
-//             nfq_set_verdict(qh, id, 1, 0, NULL);
-//             printf ("Callback : not belong IP range: After verdict\n");
-//             return 1;
-//         } 
+//         unsigned int id = ntohl(ph->packet_id);
+//         printf("Gói tin ID: %u\n", id);
 
-//         // Quá trình NAT
-//         uint32_t temp_ip;
-//         inet_pton(AF_INET, "192.168.1.200", &temp_ip);
-//         ip->saddr = temp_ip;
+//         unsigned char *payload;
+//         int payload_len = nfq_get_payload(nfa, &payload);
+//          printf ("CHECKING: payload len: %d\n", payload_len);
+
+//         // Ưu tiên kiểm tra header IP (trường hợp không có Ethernet)
+//         if (payload_len >= sizeof(struct iphdr)) {
+
+//         printf ("Callback : Before verdict\n");
+//         nfq_set_verdict(qh, id, 1, 0, NULL);
+//         printf ("Callback : After verdict\n");
 //         return 1;
+//     }
 //     }
 //     return 0;
 // }
+
+static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
+    printf ("THis is callback function in main\n");
+    unsigned char *payload;
+    int len = nfq_get_payload(nfa, &payload);
+    if ( len <=0 ) {
+        printf ("[ERROR]: Failed to get Netfilter payload from queue\n");
+        return 0;
+    }
+
+    struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
+    if (ph) {
+        unsigned int id = ntohs(ph->packet_id);
+        struct iphdr *ip  = (struct iphdr *)payload;
+        // uint32_t host_saddr = ip->saddr;
+        // uint32_t host_daddr = ip->daddr;
+        // char *s_ip = (char *)malloc(INET_ADDRSTRLEN);
+        // char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
+        // inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
+        // inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
+        // printf("IP Nguồn: %s, Đích: %s \n",
+        //                     s_ip, d_ip);
+        // if (strncmp (s_ip, "192.168.2.x", 9)) {
+        //     printf ("IP source is not belong to eth0 IP range\n");
+            printf ("Callback : not belong IP range: Before verdict\n");
+            nfq_set_verdict(qh, id, 1, 0, NULL);
+            printf ("Callback : not belong IP range: After verdict\n");
+    //         return 1;
+    //     } 
+
+    //     // Quá trình NAT
+    //     uint32_t temp_ip;
+    //     inet_pton(AF_INET, "192.168.1.200", &temp_ip);
+    //     ip->saddr = temp_ip;
+    //     return 1;
+     }
+    return 0;
+}
 
 int main() {
     set_interface_ip("wlan0", "192.168.2.1", "255.255.255.0");
