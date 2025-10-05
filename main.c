@@ -277,7 +277,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
         uint32_t temp_ip;
         inet_pton(AF_INET, "192.168.1.200", &temp_ip);
         ip->saddr = temp_ip;
-        nfq_set_verdict(qh, id, 1, 0, NULL);
+        nfq_set_verdict(qh, id, 1, len, payload);
         printf ("Check in NAT process end\n");
         return 1;
     }
