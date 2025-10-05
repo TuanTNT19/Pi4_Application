@@ -269,6 +269,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
                             s_ip, d_ip);
         if (strncmp (s_ip, "192.168.2.x", 9)) {
             printf ("IP source is not belong to eth0 IP range\n");
+            free(s_ip);
+            free(d_ip);
             return nfq_set_verdict(qh, id, 1, 0, NULL);
         } 
 
@@ -279,6 +281,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
         ip->saddr = temp_ip;
         nfq_set_verdict(qh, id, 1, len, payload);
         printf ("Check in NAT process end\n");
+        free(s_ip);
+        free(d_ip);
         return 1;
     }
     return 0;
