@@ -164,14 +164,14 @@ int start_dhcp_server(char *interface, char *ip_start, char *ip_end, char *ip_ga
 }
 
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
+    unsigned char *payload;
+    int payload_len = nfq_get_payload(nfa, &payload);
+    printf ("CHECKING: payload len: %d\n", payload_len);
+    printf ("THis is callback function in main\n");
     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
     if (ph) {
         unsigned int id = ntohl(ph->packet_id);
         printf("Gói tin ID: %u\n", id);
-
-        unsigned char *payload;
-        int payload_len = nfq_get_payload(nfa, &payload);
-         printf ("CHECKING: payload len: %d\n", payload_len);
 
         // Ưu tiên kiểm tra header IP (trường hợp không có Ethernet)
         if (payload_len >= sizeof(struct iphdr)) {
