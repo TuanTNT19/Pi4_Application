@@ -265,6 +265,8 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
         char *d_ip = (char *)malloc(INET_ADDRSTRLEN);
         inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
+        printf("Nguồn: %s, Đích: %s\n",
+                            s_ip, d_ip);
         if (strncmp (s_ip, "192.168.2.x", 9)) {
             printf ("IP source is not belong to eth0 IP range\n");
             return nfq_set_verdict(qh, id, 1, 0, NULL);
