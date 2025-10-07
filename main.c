@@ -259,12 +259,6 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
     if (ph) {
         unsigned int id = ntohl(ph->packet_id);
-        case NF_INET_PRE_ROUTING: hook_name = "PREROUTING"; break;
-        case NF_INET_LOCAL_IN: hook_name = "INPUT"; break;
-        case NF_INET_FORWARD: hook_name = "FORWARD"; break;
-        case NF_INET_LOCAL_OUT: hook_name = "OUTPUT"; break;
-        case NF_INET_POST_ROUTING: hook_name = "POSTROUTING"; break;
-        default: hook_name = "UNKNOWN"; break;
         if (ph->hook == NF_INET_PRE_ROUTING) {
             printf ("Hook: PREROUTING");
         }
