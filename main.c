@@ -292,7 +292,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             printf ("IP source is not belong to eth0 IP range\n");
             free(s_ip);
             free(d_ip);
-            return nfq_set_verdict(qh, id, 1, 0, NULL);
+           // return nfq_set_verdict(qh, id, 1, 0, NULL);
         } 
         if (ph->hook == NF_INET_PRE_ROUTING) {
             printf ("Prerouting : Change destination IP\n");
