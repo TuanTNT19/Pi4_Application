@@ -294,22 +294,37 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             free(d_ip);
             return nfq_set_verdict(qh, id, 1, 0, NULL);
         } 
+        if (ph->hook == NF_INET_PRE_ROUTING) {
+            printf ("Prerouting : Change destination IP\n");
+            uint32_t temp_ip;
+            inet_pton(AF_INET, "8.8.8.8", &temp_ip);
+            ip->daddr = temp_ip;
+            nfq_set_verdict(qh, id, 1, len, payload);
+        }
+
+        else if (ph->hook == NF_INET_POST_ROUTING) {
+            printf ("Prerouting : Change source IP\n");
+            uint32_t temp_ip;
+            inet_pton(AF_INET, "192.168.1.200", &temp_ip);
+            ip->saddr = temp_ip;
+            nfq_set_verdict(qh, id, 1, len, payload);
+        }
 
         // Quá trình NAT
-        printf ("Check in NAT process start\n");
-        uint32_t temp_ip;
-        inet_pton(AF_INET, "192.168.1.200", &temp_ip);
-        ip->saddr = temp_ip;
-        host_saddr = ip->saddr;
-        host_daddr = ip->daddr;
-        inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
-        inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
-        printf("S2: Nguồn: %s, Đích: %s\n",
-                            s_ip, d_ip);
-        nfq_set_verdict(qh, id, 1, len, payload);
-        printf ("Check in NAT process end\n");
-        free(s_ip);
-        free(d_ip);
+        // printf ("Check in NAT process start\n");
+        // uint32_t temp_ip;
+        // inet_pton(AF_INET, "192.168.1.200", &temp_ip);
+        // ip->saddr = temp_ip;
+        // host_saddr = ip->saddr;
+        // host_daddr = ip->daddr;
+        // inet_ntop(AF_INET, &host_saddr, s_ip, INET_ADDRSTRLEN);
+        // inet_ntop(AF_INET, &host_daddr, d_ip, INET_ADDRSTRLEN);
+        // printf("S2: Nguồn: %s, Đích: %s\n",
+        //                     s_ip, d_ip);
+        // nfq_set_verdict(qh, id, 1, len, payload);
+        // printf ("Check in NAT process end\n");
+         free(s_ip);
+         free(d_ip);
         return 1;
     }
     return 0;
