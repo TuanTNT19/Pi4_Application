@@ -13,6 +13,7 @@
 #include <netinet/udp.h>
 #include <net/ethernet.h>
 #include <libnetfilter_queue/libnetfilter_queue.h>
+#include <linux/netfilter.h>
 #include <sys/wait.h>
 
 //Hàm thiết lập IP tĩnh cho giao diện
@@ -258,6 +259,32 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
     struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
     if (ph) {
         unsigned int id = ntohl(ph->packet_id);
+        case NF_INET_PRE_ROUTING: hook_name = "PREROUTING"; break;
+        case NF_INET_LOCAL_IN: hook_name = "INPUT"; break;
+        case NF_INET_FORWARD: hook_name = "FORWARD"; break;
+        case NF_INET_LOCAL_OUT: hook_name = "OUTPUT"; break;
+        case NF_INET_POST_ROUTING: hook_name = "POSTROUTING"; break;
+        default: hook_name = "UNKNOWN"; break;
+        if (ph->hook == NF_INET_PRE_ROUTING) {
+            printf ("Hook: PREROUTING");
+        }
+        else if (ph->hook == NF_INET_LOCAL_IN) {
+            printf ("Hook: LOCAL_IN");
+        }
+        else if (ph->hook == NF_INET_FORWARD) {
+            printf ("Hook: FORWARD");
+        }
+        else if (ph->hook == NF_INET_LOCAL_OUT) {
+            printf ("Hook: LOCAL_OUT");
+        }
+        else if (ph->hook == NF_INET_POST_ROUTING) {
+            printf ("Hook: POST_ROUTING");
+        }   
+        else {
+            printf ("Hook: Unknown");
+        }     
+        printf ("\n");
+
         struct iphdr *ip  = (struct iphdr *)payload;
         uint32_t host_saddr = ip->saddr;
         uint32_t host_daddr = ip->daddr;
