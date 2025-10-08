@@ -300,7 +300,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             uint32_t temp_ip;
             inet_pton(AF_INET, "8.8.8.8", &temp_ip);
             ip->daddr = temp_ip;
-            //nfq_set_verdict(qh, id, 1, len, payload);
+            nfq_set_verdict(qh, id, 1, len, payload);
         }
 
         else if (ph->hook == NF_INET_POST_ROUTING) {
