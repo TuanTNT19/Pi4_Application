@@ -248,6 +248,7 @@ int start_dhcp_server(char *interface, char *ip_start, char *ip_end, char *ip_ga
 // }
 
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data) {
+    printf ("\n");
     printf ("THis is callback function in main\n");
     unsigned char *payload;
     int len = nfq_get_payload(nfa, &payload);
@@ -309,6 +310,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             ip->saddr = temp_ip;
             nfq_set_verdict(qh, id, 1, len, payload);
         }
+        printf ("\n");
 
         // Quá trình NAT
         // printf ("Check in NAT process start\n");
