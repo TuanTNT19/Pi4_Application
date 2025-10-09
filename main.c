@@ -297,9 +297,9 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
         } 
         if (ph->hook == NF_INET_PRE_ROUTING) {
             printf ("Prerouting : Change destination IP\n");
-            // uint32_t temp_ip;
-            // inet_pton(AF_INET, "8.8.8.8", &temp_ip);
-            // ip->daddr = temp_ip;
+            uint32_t temp_ip;
+            inet_pton(AF_INET, "8.8.8.8", &temp_ip);
+            ip->daddr = temp_ip;
             nfq_set_verdict(qh, id, 1, len, payload);
         }
 
