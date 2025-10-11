@@ -297,18 +297,18 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
         } 
         if (ph->hook == NF_INET_PRE_ROUTING) {
             printf ("Prerouting : Change destination IP\n");
-            uint32_t temp_ip;
-            inet_pton(AF_INET, "8.8.8.8", &temp_ip);
-            ip->daddr = temp_ip;
-            nfq_set_verdict(qh, id, 1, len, payload);
+            // uint32_t temp_ip;
+            // inet_pton(AF_INET, "8.8.8.8", &temp_ip);
+            // ip->daddr = temp_ip;
+            nfq_set_verdict(qh, id, 1, 0, NULL);
         }
 
         else if (ph->hook == NF_INET_POST_ROUTING) {
             printf ("Postrouting : Change source IP\n");
-            // uint32_t temp_ip;
-            // inet_pton(AF_INET, "192.168.1.200", &temp_ip);
-            // ip->saddr = temp_ip;
-            nfq_set_verdict(qh, id, 1, 0, NULL);
+            uint32_t temp_ip;
+            inet_pton(AF_INET, "192.168.1.200", &temp_ip);
+            ip->saddr = temp_ip;
+            nfq_set_verdict(qh, id, 1, len, payload);
         }
 
         // Quá trình NAT
