@@ -310,7 +310,6 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *
             // ip->saddr = temp_ip;
             nfq_set_verdict(qh, id, 1, 0, NULL);
         }
-        printf ("\n");
 
         // Quá trình NAT
         // printf ("Check in NAT process start\n");
@@ -400,6 +399,7 @@ int main() {
             break;
         }
         printf("Nhận dữ liệu, kích thước: %d byte\n", rv);
+        printf ("\n");
         nfq_handle_packet(h, recv_buf, rv);
     }
 
