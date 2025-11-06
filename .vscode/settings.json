@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "string": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "ostream": "c",
+        "iostream": "c",
+        "thread": "c",
+        "deque": "cpp",
+        "vector": "cpp"
+    }
+}
