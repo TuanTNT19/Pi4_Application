@@ -1,10 +1,10 @@
 all: ARP_Proxy
 
 ARP_Proxy:
-	$(CC) $(CFLAGS) -o ARP_Proxy ARP_Proxy.cpp
+	$(CXX) $(CXXFLAGS) -o ARP_Proxy ARP_Proxy.cpp -ltins -lpthread
 
 clean:
 	rm -f ARP_Proxy ARP_Proxy.o
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CXX) $(CXXFLAGS) -c $<
