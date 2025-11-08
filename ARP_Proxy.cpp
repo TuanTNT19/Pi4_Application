@@ -38,12 +38,8 @@ void Send_ARP_Reply(const string &src_ip, const HWAddress<6>& src_mac,
 void Packet_Handle (PDU &pdu, const string &in_if) {
     try {
         cout << "=== Checking in Packet_Handle function Start===" << endl;
-        const EthernetII& eth = pdu.rfind_pdu<EthernetII>();
-        if (eth.payload_type() != EthernetII::ARP) return;
 
-        cout << "=== Checking in Packet_Handle function found eth " << endl;
-
-        const ARP& arp = eth.rfind_pdu<ARP>();
+        const ARP& arp = pdu.rfind_pdu<ARP>();
         if (arp.opcode() != ARP::REQUEST) return;
         cout << "=== Checking in Packet_Handle function found ARP Request " << endl;
 
@@ -71,7 +67,7 @@ void Packet_Handle (PDU &pdu, const string &in_if) {
         cout << "[PROXY] " << source_ip << " asking for " << target_ip
                   << " → reply with " << proxy_mac << " via " << out_if << endl;
         
-        Send_ARP_Reply (target_ip, proxy_mac, source_ip, eth.src_addr(), out_if);
+        Send_ARP_Reply (target_ip, proxy_mac, source_ip, arp.sender_hw_addr(), out_if);
     } catch (...) {};
 }
 
