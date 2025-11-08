@@ -37,6 +37,7 @@ void Send_ARP_Reply(const string &src_ip, const HWAddress<6>& src_mac,
 // Packet handle
 void Packet_Handle (PDU &pdu, const string &in_if) {
     try {
+        cout << "=== Checking in Packet_Handle function ===" << endl;
         const EthernetII& eth = pdu.rfind_pdu<EthernetII>();
         if (eth.payload_type() != EthernetII::ARP) return;
 
