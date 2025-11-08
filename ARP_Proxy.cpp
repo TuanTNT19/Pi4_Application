@@ -37,15 +37,19 @@ void Send_ARP_Reply(const string &src_ip, const HWAddress<6>& src_mac,
 // Packet handle
 void Packet_Handle (PDU &pdu, const string &in_if) {
     try {
-        cout << "=== Checking in Packet_Handle function ===" << endl;
+        cout << "=== Checking in Packet_Handle function Start===" << endl;
         const EthernetII& eth = pdu.rfind_pdu<EthernetII>();
         if (eth.payload_type() != EthernetII::ARP) return;
 
+        cout << "=== Checking in Packet_Handle function found eth " << endl;
+
         const ARP& arp = eth.rfind_pdu<ARP>();
         if (arp.opcode() != ARP::REQUEST) return;
+        cout << "=== Checking in Packet_Handle function found ARP Request " << endl;
 
         string target_ip = arp.target_ip_addr().to_string();
         string source_ip = arp.sender_ip_addr().to_string();
+        cout << "=== Checking in Packet_Handle function found IP nguon: " << source_ip << "_ IP dich: " << target_ip<< endl;
         bool is_local = false;
         string out_if;
         HWAddress<6> proxy_mac;
@@ -53,6 +57,7 @@ void Packet_Handle (PDU &pdu, const string &in_if) {
         for (int i = 0; i < vlan_ips.size(); i++) {
             if (target_ip == vlan_ips.at(i)) continue;
             if (source_ip.compare(0, 9, vlan_ips.at(i), 0, 9) == 0) {
+                cout << "=== Checking in Packet_Handle function found same range with " << vlan_ips.at(i) << endl;                
                 out_if = interfaces.at(i);
                 NetworkInterface out_interface(out_if);
                 proxy_mac = out_interface.hw_address();
