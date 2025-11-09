@@ -115,13 +115,14 @@ int main() {
         } catch (...) {}
     }
 
-    vector <thread> threads ;
-    for (auto iface : interfaces) {
-        thread t(sniff_interface, iface);
-        threads.push_back(std::move(t));
-    }
+    // vector <thread> threads ;
+    // for (auto iface : interfaces) {
+    //     thread t(sniff_interface, iface);
+    //     threads.push_back(std::move(t));
+    // }
 
-    std::cout << "ARP Proxy running... Press Ctrl+C to stop.\n";
-    for (auto& t : threads) t.join();    
+    // std::cout << "ARP Proxy running... Press Ctrl+C to stop.\n";
+    // for (auto& t : threads) t.join();   
+    sniff_interface("eth0.20"); 
     return 0;
 }
