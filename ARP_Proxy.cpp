@@ -58,7 +58,7 @@ void ARP_Proxy_Iface :: Packet_Handle (PDU &pdu) {
     }
 
     for (int i = 0; i < interfaces.size(); i++) {
-        if (source_ip.compare(0, 9, vlan_ips.at(i), 0, 9)) {
+        if (source_ip.compare(0, 9, vlan_ips.at(i), 0, 9) == 0) {
             out_if = interfaces.at(i);
             NetworkInterface out_interface (out_if);
             proxy_mac = out_interface.hw_address();
