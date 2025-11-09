@@ -57,6 +57,7 @@ void Packet_Handle (PDU &pdu, const string &in_if) {
                 out_if = interfaces.at(i);
                 NetworkInterface out_interface(out_if);
                 proxy_mac = out_interface.hw_address();
+                is_local = true;
                 break;
             }
         }
@@ -64,8 +65,10 @@ void Packet_Handle (PDU &pdu, const string &in_if) {
         if (!is_local) return;
 
         // Send ARP Reply
-        cout << "[PROXY] " << source_ip << " asking for " << target_ip
-                  << " → reply with " << proxy_mac << " via " << out_if << endl;
+        // cout << "[PROXY] " << source_ip << " asking for " << target_ip
+        //           << " → reply with " << proxy_mac << " via " << out_if << endl;
+        cout << "ARP Proxy Reply" << "IP Source: " << target_ip << " - IP Des: " << source_ip 
+                << " MAC Source: " << proxy_mac << " - MAC Des: " << arp.sender_hw_addr().to_string() << endl;
         
         Send_ARP_Reply (target_ip, proxy_mac, source_ip, arp.sender_hw_addr(), out_if);
     } catch (...) {};
