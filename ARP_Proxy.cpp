@@ -49,6 +49,13 @@ void Packet_Handle (PDU &pdu, const string &in_if) {
         bool is_local = false;
         string out_if;
         HWAddress<6> proxy_mac;
+        string my_ip;
+        NetworkInterface in_interface(in_if);
+        my_ip = in_interface.ipv4_address().to_string();
+        if ( my_ip == source_ip) {
+            cout << "IGNORE mine packet" << endl;
+            return ;
+        }
 
         for (int i = 0; i < vlan_ips.size(); i++) {
             if (target_ip == vlan_ips.at(i)) continue;
