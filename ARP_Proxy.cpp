@@ -17,6 +17,7 @@ unordered_map <string, HWAddress<6>> ip_to_mac;
 bool running = true;
 void signal_handler(int sig) {
     running = false;
+    exit(0);
 }
 
 class ARP_Proxy_Iface {
