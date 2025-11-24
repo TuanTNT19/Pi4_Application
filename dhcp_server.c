@@ -23,6 +23,12 @@
 #define DHCP_REQUEST    3
 #define DHCP_ACK        5
 
+typedef struct {
+    uint8_t Type;
+    uint8_t Lenght;
+    char Value[80];
+} dhcp_option;
+
 typedef struct 
 {
     uint8_t opcode, htype, hlen, hops;
@@ -32,7 +38,8 @@ typedef struct
     uint8_t  chaddr[16];
     uint8_t  sname[64];
     uint8_t  file[128];
-    uint8_t  options[312];
+    uint32_t magic_cookie;
+    dhcp_option  options[312];
 } dhcp_packet;
 
 int get_mac (const char *iface, uint8_t mac[6]) {
@@ -64,26 +71,53 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     ip->ihl = 5;
     ip->tot_len = htons (sizeof (struct iphdr) + sizeof (struct udphdr) + 240 + 100);
     ip->protocol = IPPROTO_UDP;
-    ip->saddr = SERVER_IP;
     ip->saddr = inet_addr (SERVER_IP);
     ip->daddr = htonl(INADDR_BROADCAST);
 
     // Create UDP header
-    struct udphdr *udp = (struct udphdr*) (packet + sizeof (struct ether_header) + sizeof (struct iphdr));
+    struct udphdr *udp = (struct udphdr*) (buffer + sizeof (struct ether_header) + sizeof (struct iphdr));
     udp->uh_dport = htons(68);
     udp->uh_sport = htons(67);
     udp->len = htons (sizeof(struct udphdr) + 240 + 100);
 
     // Create DHCP packet
-    dhcp_packet *dhcp = (dhcp_packet *) (packet + sizeof (struct ether_header) + sizeof (struct iphdr) + sizeof(struct udphdr));
+    dhcp_packet *dhcp = (dhcp_packet *) (buffer + sizeof (struct ether_header) + sizeof (struct iphdr) + sizeof(struct udphdr));
     dhcp->opcode = 2; // BOOTREPLY
     dhcp->htype = 1;
     dhcp->hlen = 6;
-    dhcp->hops = 64;
+    dhcp->hops = 0;
     dhcp->xid = pack->xid;
     memcpy (dhcp->chaddr , pack->chaddr, 16);
-    dhcp->ciaddr = inet_addr(OFFER_IP);
+    dhcp->yiaddr = inet_addr(OFFER_IP);
     dhcp->siaddr = inet_addr(SERVER_IP);
+    dhcp->magic_cookie = htonl(MAGIC_COOKIE);
+
+    dhcp->options[0].Type = 53;
+    dhcp->options[0].Lenght = 1;
+    dhcp->options->Value[0] = msg_type;
+
+    dhcp->options[1].Type = 54;
+    dhcp->options[1].Lenght = 4;
+    dhcp->options[1].Value = inet_addr(SERVER_IP);
+
+    dhcp->options[2].Type = 1;
+    dhcp->options[2].Lenght = 4;
+    dhcp->options[2].Value = inet_addr(SUBNET_MASK);
+    
+    dhcp->options[3].Type = 3;
+    dhcp->options[3].Lenght = 4;
+    dhcp->options[3].Value = inet_addr(SERVER_IP);
+
+    dhcp->options[4].Type = 51;
+    dhcp->options[4].Lenght = 4;
+    dhcp->options[4].Value = htonl(LEASE_TIME);
+
+    dhcp->options[5].Type = 255;
+    dhcp->options[5].Lenght = 0;
+
+    int packet_len = sizeof(struct ether_header) + sizeof (struct iphdr) + sizeof (struct udphdr) + 240 + 100;
+
+    return pcap_sendpacket(handle, buffer, packet_len);
 
 }
 
