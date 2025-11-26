@@ -15,7 +15,7 @@
 #define OFFER_IP       "192.168.10.100"
 #define SUBNET_MASK    "255.255.255.0"
 #define LEASE_TIME     86400
-#define MAGIC_COOKIE   0x08122002
+#define MAGIC_COOKIE   0x63825363
 
 // DHCP Message Types
 #define DHCP_DISCOVER   1
@@ -34,7 +34,7 @@ typedef struct
     uint8_t opcode, htype, hlen, hops;
     uint32_t xid;
     uint16_t secs, flags;
-    uint32_t ciaddr, yiaddr, siaddr, chaddr;
+    uint32_t ciaddr, yiaddr, siaddr, giaddr;
     uint8_t  chaddr[16];
     uint8_t  sname[64];
     uint8_t  file[128];
@@ -118,6 +118,41 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     int packet_len = sizeof(struct ether_header) + sizeof (struct iphdr) + sizeof (struct udphdr) + 240 + 100;
 
     return pcap_sendpacket(handle, buffer, packet_len);
-
 }
+
+void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes) {
+    pcap_t *handle = (pcap_t*)user;
+
+    struct ether_header *eth = (struct ether_header*) bytes;
+    if (eth->ether_type != htons(ETHERTYPE_IP)) {
+        printf ("Packet not have IP header\n");
+        return ;
+    }
+
+    struct iphdr *ip = (struct iphdr *) (bytes + sizeof(struct ether_header));
+    if (ip->protocol != IPPROTO_UDP) {
+        printf ("Packet not have UDP header\n");
+        return;
+    }
+
+    uint8_t Server_MAC[6];
+    get_mac ("eth0", Server_MAC);
+    dhcp_packet *dhcp = (dhcp_packet *) (bytes + sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct udphdr));
+    for (int i =0; i < 30; i++) {
+        if (dhcp->options[i]->Type == 53) {
+            if (dhcp->options[i].Value[0] == DHCP_DISCOVER) {
+                send_dhcp_reply (handle, dhcp, DHCP_OFFER, Server_MAC, dhcp->chaddr);
+                break;
+            }
+            else if (dhcp->options[i].Value[0] == DHCP_REQUEST) {
+                send_dhcp_reply (handle, dhcp, DHCP_ACK, Server_MAC, dhcp->chaddr);
+                break;
+            }
+            else {
+                printf ("Server not receive any Discover or Request\n");
+            }
+        }
+    }
+}
+
 
