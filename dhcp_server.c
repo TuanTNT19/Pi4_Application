@@ -58,6 +58,7 @@ int get_mac (const char *iface, uint8_t mac[6]) {
 int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, const uint8_t server_mac[6], const uint8_t client_mac[6]) {
     uint8_t buffer[1500];
     memset(buffer, 0, sizeof(buffer));
+    uint32_t tmp;
 
     // Create ethernet header
     struct ether_header *eth = (struct ether_header *)buffer;
@@ -78,7 +79,7 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     struct udphdr *udp = (struct udphdr*) (buffer + sizeof (struct ether_header) + sizeof (struct iphdr));
     udp->uh_dport = htons(68);
     udp->uh_sport = htons(67);
-    udp->len = htons (sizeof(struct udphdr) + 240 + 100);
+    udp->len = htons (sizeof(struct udphdr) + 248 + 100);
 
     // Create DHCP packet
     dhcp_packet *dhcp = (dhcp_packet *) (buffer + sizeof (struct ether_header) + sizeof (struct iphdr) + sizeof(struct udphdr));
@@ -94,28 +95,32 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
 
     dhcp->options[0].Type = 53;
     dhcp->options[0].Lenght = 1;
-    dhcp->options->Value[0] = msg_type;
+    dhcp->options[0].Value[0] = msg_type;
 
     dhcp->options[1].Type = 54;
     dhcp->options[1].Lenght = 4;
-    dhcp->options[1].Value = inet_addr(SERVER_IP);
+    tmp = &inet_addr(SERVER_IP);
+    memcpy(dhcp->options[1].Value, tmp, 4);
 
     dhcp->options[2].Type = 1;
     dhcp->options[2].Lenght = 4;
-    dhcp->options[2].Value = inet_addr(SUBNET_MASK);
+    tmp = &inet_addr(SUBNET_MASK);
+    memcpy(dhcp->options[2].Value, tmp, 4);
     
     dhcp->options[3].Type = 3;
     dhcp->options[3].Lenght = 4;
-    dhcp->options[3].Value = inet_addr(SERVER_IP);
+    tmp = &inet_addr(SERVER_IP);
+    memcpy(dhcp->options[3].Value, tmp, 4);
 
     dhcp->options[4].Type = 51;
     dhcp->options[4].Lenght = 4;
-    dhcp->options[4].Value = htonl(LEASE_TIME);
+    tmp = &inet_addr(LEASE_TIME);
+    memcpy(dhcp->options[4].Value, tmp, 4);
 
     dhcp->options[5].Type = 255;
     dhcp->options[5].Lenght = 0;
 
-    int packet_len = sizeof(struct ether_header) + sizeof (struct iphdr) + sizeof (struct udphdr) + 240 + 100;
+    int packet_len = sizeof(struct ether_header) + sizeof (struct iphdr) + sizeof (struct udphdr) + 248 + 100;
 
     return pcap_sendpacket(handle, buffer, packet_len);
 }
@@ -139,7 +144,7 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     get_mac ("eth0", Server_MAC);
     dhcp_packet *dhcp = (dhcp_packet *) (bytes + sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct udphdr));
     for (int i =0; i < 30; i++) {
-        if (dhcp->options[i]->Type == 53) {
+        if (dhcp->options[i].Type == 53) {
             if (dhcp->options[i].Value[0] == DHCP_DISCOVER) {
                 send_dhcp_reply (handle, dhcp, DHCP_OFFER, Server_MAC, dhcp->chaddr);
                 break;
@@ -155,4 +160,30 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     }
 }
 
+int main() {
+    char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_t *handle = pcap_open_live("eth0", 65536, 1, 1000, errbuf);
+    if (!handle) {
+        fprintf(stderr, "pcap_open_live(%s): %s\n", "eth0", errbuf);
+        return 1;
+    }
+
+    struct bpf_program fp;
+    if (pcap_compile(handle, &fp, "udp port 67 or udp port 68", 0, PCAP_NETMASK_UNKNOWN) < 0 ||
+        pcap_setfilter(handle, &fp) < 0) {
+        fprintf(stderr, "Filter error: %s\n", pcap_geterr(handle));
+        pcap_close(handle);
+        return 1;
+    }
+    pcap_freecode(&fp);
+
+    uint8_t mac[6];
+    if (get_mac("eth0", mac)) {
+        printf("DHCP Server started on eth0 | IP: %s | MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
+               SERVER_IP, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    }    
+    printf("Listening for DHCP... (Ctrl+C to stop)\n\n");
+    pcap_loop(handle, 0, packet_handler, NULL);
+    return 0;
+}
 
