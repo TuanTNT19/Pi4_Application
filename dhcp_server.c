@@ -99,23 +99,23 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
 
     dhcp->options[1].Type = 54;
     dhcp->options[1].Lenght = 4;
-    tmp = &inet_addr(SERVER_IP);
-    memcpy(dhcp->options[1].Value, tmp, 4);
+    tmp = inet_addr(SERVER_IP);
+    memcpy(dhcp->options[1].Value, &tmp, 4);
 
     dhcp->options[2].Type = 1;
     dhcp->options[2].Lenght = 4;
-    tmp = &inet_addr(SUBNET_MASK);
-    memcpy(dhcp->options[2].Value, tmp, 4);
+    tmp = inet_addr(SUBNET_MASK);
+    memcpy(dhcp->options[2].Value, &tmp, 4);
     
     dhcp->options[3].Type = 3;
     dhcp->options[3].Lenght = 4;
-    tmp = &inet_addr(SERVER_IP);
-    memcpy(dhcp->options[3].Value, tmp, 4);
+    tmp = inet_addr(SERVER_IP);
+    memcpy(dhcp->options[3].Value, &tmp, 4);
 
     dhcp->options[4].Type = 51;
     dhcp->options[4].Lenght = 4;
-    tmp = &inet_addr(LEASE_TIME);
-    memcpy(dhcp->options[4].Value, tmp, 4);
+    tmp = htonl(LEASE_TIME);
+    memcpy(dhcp->options[4].Value, &tmp, 4);
 
     dhcp->options[5].Type = 255;
     dhcp->options[5].Lenght = 0;
