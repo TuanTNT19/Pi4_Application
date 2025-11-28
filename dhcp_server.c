@@ -79,7 +79,7 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     struct udphdr *udp = (struct udphdr*) (buffer + sizeof (struct ether_header) + sizeof (struct iphdr));
     udp->uh_dport = htons(68);
     udp->uh_sport = htons(67);
-    udp->len = htons (sizeof(struct udphdr) + 248 + 100);
+    udp->uh_ulen = htons (sizeof(struct udphdr) + 248 + 100);
 
     // Create DHCP packet
     dhcp_packet *dhcp = (dhcp_packet *) (buffer + sizeof (struct ether_header) + sizeof (struct iphdr) + sizeof(struct udphdr));
