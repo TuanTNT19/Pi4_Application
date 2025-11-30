@@ -156,9 +156,9 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     }
     printf ("packet_handler : See a packet with correct ip header\n"); 
 
-    struct udphdr *udp = (struct udphdr*) (buffer + sizeof (struct ether_header) + ip->ihl * 4);
-    printf ("packet_handler: udp packet: port source: %d, port des: %d, len: %d\n", ntohl(udp->uh_sport), ntohl(udp->uh_dport), ntohl(udp->len));
-    
+    struct udphdr *udp = (struct udphdr*) (bytes + sizeof (struct ether_header) + ip->ihl * 4);
+    printf ("packet_handler: udp packet: port source: %d, port des: %d, len: %d\n", ntohl(udp->uh_sport), ntohl(udp->uh_dport), ntohl(udp->uh_ulen));
+
     dhcp_packet *dhcp = (dhcp_packet *) (bytes + sizeof(struct ether_header) + ip->ihl*4+ sizeof(struct udphdr));
     for (int i =0; i < 30; i++) {
         if (dhcp->options[i].Type == 53) {
