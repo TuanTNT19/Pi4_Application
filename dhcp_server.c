@@ -170,13 +170,19 @@ int main() {
     }
 
     struct bpf_program fp;
-    if (pcap_compile(handle, &fp, "udp port 67 or udp port 68", 0, PCAP_NETMASK_UNKNOWN) < 0 ||
-        pcap_setfilter(handle, &fp) < 0) {
-        fprintf(stderr, "Filter error: %s\n", pcap_geterr(handle));
+    const char *filter = "udp port 67 or udp port 68";
+    if (pcap_compile(handle, &fp, filter, 0, PCAP_NETMASK_UNKNOWN) < 0) {
+        fprintf(stderr, "Lỗi compile filter: %s\n", pcap_geterr(handle));
         pcap_close(handle);
         return 1;
     }
-    pcap_freecode(&fp);
+
+    if (pcap_setfilter(handle, &fp) < 0) {
+        fprintf(stderr, "Lỗi set filter: %s\n", pcap_geterr(handle));
+        pcap_close(handle);
+        return 1;
+    }
+    pcap_freecode(&fp); 
 
     uint8_t mac[6];
     if (get_mac("eth0", mac)) {
