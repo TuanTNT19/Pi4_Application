@@ -130,6 +130,9 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
 void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes) {
     pcap_t *handle = (pcap_t*)user;
 
+    uint8_t Server_MAC[6];
+    get_mac ("eth0", Server_MAC);
+
     printf ("packet_handler : See a packet \n");
     struct ether_header *eth = (struct ether_header*) bytes;
     if (eth->ether_type != htons(ETHERTYPE_IP)) {
@@ -137,6 +140,10 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
         return ;
     }
     printf ("packet_handler : See a packet with correct ethernet header\n"); 
+    if (memcmp(eth->ether_shost, Server_MAC, 6) == 0) {
+        printf ("DHCP itself\n");
+        return ;
+    }
 
     struct iphdr *ip = (struct iphdr *) (bytes + sizeof(struct ether_header));
     if (ip->protocol != IPPROTO_UDP) {
@@ -145,8 +152,6 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     }
     printf ("packet_handler : See a packet with correct ip header\n"); 
 
-    uint8_t Server_MAC[6];
-    get_mac ("eth0", Server_MAC);
     dhcp_packet *dhcp = (dhcp_packet *) (bytes + sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct udphdr));
     for (int i =0; i < 30; i++) {
         if (dhcp->options[i].Type == 53) {
