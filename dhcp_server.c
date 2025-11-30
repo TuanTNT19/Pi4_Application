@@ -60,6 +60,7 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     memset(buffer, 0, sizeof(buffer));
     uint32_t tmp;
 
+    printf ("send_dhcp_reply: Start\n");
     // Create ethernet header
     struct ether_header *eth = (struct ether_header *)buffer;
     memcpy (eth->ether_dhost, 0xFF, 6);
@@ -156,11 +157,13 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     for (int i =0; i < 30; i++) {
         if (dhcp->options[i].Type == 53) {
             if (dhcp->options[i].Value[0] == DHCP_DISCOVER) {
+                printf ("packet_handler: This is DHCP Discover\n");
                 send_dhcp_reply (handle, dhcp, DHCP_OFFER, Server_MAC, dhcp->chaddr);
                 printf ("packet_handler: Sent DHCP offer\n");
                 break;
             }
             else if (dhcp->options[i].Value[0] == DHCP_REQUEST) {
+                printf ("packet_handler: This is DHCP request\n");
                 send_dhcp_reply (handle, dhcp, DHCP_ACK, Server_MAC, dhcp->chaddr);
                 printf ("packet_handler: Sent DHCP ack\n");
                 break;
