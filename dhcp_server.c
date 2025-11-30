@@ -62,7 +62,7 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
 
     // Create ethernet header
     struct ether_header *eth = (struct ether_header *)buffer;
-    memcpy (eth->ether_dhost, client_mac, 6);
+    memcpy (eth->ether_dhost, 0xFF, 6);
     memcpy (eth->ether_shost, server_mac, 6);
     eth->ether_type = htons(ETHERTYPE_IP);
 
@@ -88,6 +88,7 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     dhcp->hlen = 6;
     dhcp->hops = 0;
     dhcp->xid = pack->xid;
+    dhcp->flags = htons(0x8000);
     memcpy (dhcp->chaddr , pack->chaddr, 16);
     dhcp->yiaddr = inet_addr(OFFER_IP);
     dhcp->siaddr = inet_addr(SERVER_IP);
