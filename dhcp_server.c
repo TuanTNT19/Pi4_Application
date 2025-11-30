@@ -76,13 +76,13 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     ip->daddr = htonl(INADDR_BROADCAST);
 
     // Create UDP header
-    struct udphdr *udp = (struct udphdr*) (buffer + sizeof (struct ether_header) + sizeof (struct iphdr));
+    struct udphdr *udp = (struct udphdr*) (buffer + sizeof (struct ether_header) + ip->ihl * 4);
     udp->uh_dport = htons(68);
     udp->uh_sport = htons(67);
     udp->uh_ulen = htons (sizeof(struct udphdr) + 248 + 100);
 
     // Create DHCP packet
-    dhcp_packet *dhcp = (dhcp_packet *) (buffer + sizeof (struct ether_header) + sizeof (struct iphdr) + sizeof(struct udphdr));
+    dhcp_packet *dhcp = (dhcp_packet *) (buffer + sizeof (struct ether_header) + ip->ihl*4 + sizeof(struct udphdr));
     dhcp->opcode = 2; // BOOTREPLY
     dhcp->htype = 1;
     dhcp->hlen = 6;
@@ -121,7 +121,7 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     dhcp->options[5].Type = 255;
     dhcp->options[5].Lenght = 0;
 
-    int packet_len = sizeof(struct ether_header) + sizeof (struct iphdr) + sizeof (struct udphdr) + 248 + 100;
+    int packet_len = sizeof(struct ether_header) + ip->ihl*4 + sizeof (struct udphdr) + 248 + 100;
 
     printf ("Sending DHCP reply from server: %s, IP offer: %s \n", SERVER_IP, OFFER_IP);
     return pcap_sendpacket(handle, buffer, packet_len);
@@ -152,7 +152,7 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     }
     printf ("packet_handler : See a packet with correct ip header\n"); 
 
-    dhcp_packet *dhcp = (dhcp_packet *) (bytes + sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct udphdr));
+    dhcp_packet *dhcp = (dhcp_packet *) (bytes + sizeof(struct ether_header) + ip->ihl*4+ sizeof(struct udphdr));
     for (int i =0; i < 30; i++) {
         if (dhcp->options[i].Type == 53) {
             if (dhcp->options[i].Value[0] == DHCP_DISCOVER) {
