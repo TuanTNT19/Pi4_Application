@@ -130,17 +130,20 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
 void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes) {
     pcap_t *handle = (pcap_t*)user;
 
+    printf ("packet_handler : See a packet \n");
     struct ether_header *eth = (struct ether_header*) bytes;
     if (eth->ether_type != htons(ETHERTYPE_IP)) {
         printf ("Packet not have IP header\n");
         return ;
     }
+    printf ("packet_handler : See a packet with correct ethernet header\n"); 
 
     struct iphdr *ip = (struct iphdr *) (bytes + sizeof(struct ether_header));
     if (ip->protocol != IPPROTO_UDP) {
         printf ("Packet not have UDP header\n");
         return;
     }
+    printf ("packet_handler : See a packet with correct ip header\n"); 
 
     uint8_t Server_MAC[6];
     get_mac ("eth0", Server_MAC);
@@ -149,10 +152,12 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
         if (dhcp->options[i].Type == 53) {
             if (dhcp->options[i].Value[0] == DHCP_DISCOVER) {
                 send_dhcp_reply (handle, dhcp, DHCP_OFFER, Server_MAC, dhcp->chaddr);
+                printf ("packet_handler: Sent DHCP offer\n");
                 break;
             }
             else if (dhcp->options[i].Value[0] == DHCP_REQUEST) {
                 send_dhcp_reply (handle, dhcp, DHCP_ACK, Server_MAC, dhcp->chaddr);
+                printf ("packet_handler: Sent DHCP ack\n");
                 break;
             }
             else {
