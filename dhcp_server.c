@@ -70,7 +70,7 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     struct iphdr *ip = (struct iphdr *) (buffer + sizeof(struct ether_header));
     ip->version = 4;
     ip->ihl = 5;
-    ip->tot_len = htons (sizeof (struct iphdr) + sizeof (struct udphdr) + 240 + 100);
+    ip->tot_len = htons (sizeof (struct iphdr) + sizeof (struct udphdr) + 248 + 100);
     ip->protocol = IPPROTO_UDP;
     ip->saddr = inet_addr (SERVER_IP);
     ip->daddr = htonl(INADDR_BROADCAST);
@@ -122,6 +122,7 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
 
     int packet_len = sizeof(struct ether_header) + sizeof (struct iphdr) + sizeof (struct udphdr) + 248 + 100;
 
+    printf ("Sending DHCP reply from server: %s, IP offer: %s \n", SERVER_IP, OFFER_IP);
     return pcap_sendpacket(handle, buffer, packet_len);
 }
 
