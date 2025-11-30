@@ -208,7 +208,7 @@ int main() {
                SERVER_IP, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     }    
     printf("Listening for DHCP... (Ctrl+C to stop)\n\n");
-    pcap_loop(handle, 0, packet_handler, NULL);
+    pcap_loop(handle, 0, packet_handler, (u_char*)handle);
     return 0;
 }
 
