@@ -63,9 +63,10 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     printf ("send_dhcp_reply: Start\n");
     // Create ethernet header
     struct ether_header *eth = (struct ether_header *)buffer;
-    memcpy (eth->ether_dhost, 0xFF, 6);
+    memcpy (eth->ether_dhost, client_mac, 6);
     memcpy (eth->ether_shost, server_mac, 6);
     eth->ether_type = htons(ETHERTYPE_IP);
+    printf ("send_dhcp_reply: Created ethernet header\n");
 
     // Create IP header
     struct iphdr *ip = (struct iphdr *) (buffer + sizeof(struct ether_header));
@@ -75,12 +76,14 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     ip->protocol = IPPROTO_UDP;
     ip->saddr = inet_addr (SERVER_IP);
     ip->daddr = htonl(INADDR_BROADCAST);
+    printf ("send_dhcp_reply: Created ip header\n");
 
     // Create UDP header
     struct udphdr *udp = (struct udphdr*) (buffer + sizeof (struct ether_header) + ip->ihl * 4);
     udp->uh_dport = htons(68);
     udp->uh_sport = htons(67);
     udp->uh_ulen = htons (sizeof(struct udphdr) + 248 + 100);
+    printf ("send_dhcp_reply: Created udp header\n");
 
     // Create DHCP packet
     dhcp_packet *dhcp = (dhcp_packet *) (buffer + sizeof (struct ether_header) + ip->ihl*4 + sizeof(struct udphdr));
@@ -121,6 +124,7 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
 
     dhcp->options[5].Type = 255;
     dhcp->options[5].Lenght = 0;
+    printf ("send_dhcp_reply: Created dhcp header\n");
 
     int packet_len = sizeof(struct ether_header) + ip->ihl*4 + sizeof (struct udphdr) + 248 + 100;
 
