@@ -92,7 +92,6 @@ int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, 
     dhcp->hlen = 6;
     dhcp->hops = 0;
     dhcp->xid = pack->xid;
-    dhcp->flags = htons(0x8000);
     memcpy (dhcp->chaddr , pack->chaddr, 16);
     dhcp->yiaddr = inet_addr(OFFER_IP);
     dhcp->siaddr = inet_addr(SERVER_IP);
