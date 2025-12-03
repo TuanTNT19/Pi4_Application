@@ -23,11 +23,16 @@
 #define DHCP_REQUEST    3
 #define DHCP_ACK        5
 
-typedef struct {
-    uint8_t Type;
-    uint8_t Lenght;
-    char Value[80];
-} dhcp_option;
+#define DHCP_CHADDR_LEN 16
+#define DHCP_SNAME_LEN  64
+#define DHCP_FILE_LEN   128
+#define DHCP_OPTIONS_LEN 312  
+
+// typedef struct {
+//     uint8_t Type;
+//     uint8_t Lenght;
+//     char Value[80];
+// } dhcp_option;
 
 typedef struct 
 {
@@ -39,7 +44,7 @@ typedef struct
     uint8_t  sname[64];
     uint8_t  file[128];
     uint32_t magic_cookie;
-    dhcp_option  options[312];
+    uint8_t  options[312];
 } dhcp_packet;
 
 int get_mac (const char *iface, uint8_t mac[6]) {
@@ -55,141 +60,187 @@ int get_mac (const char *iface, uint8_t mac[6]) {
     return 1;
 }
 
-int send_dhcp_reply (pcap_t *handle, const dhcp_packet* pack, uint8_t msg_type, const uint8_t server_mac[6], const uint8_t client_mac[6]) {
-    uint8_t buffer[1500];
-    memset(buffer, 0, sizeof(buffer));
-    uint32_t tmp;
+int get_dhcp_message_type(struct dhcp_packet *dhcp)
+{
+    int i = 0;
 
-    printf ("send_dhcp_reply: Start\n");
-    // Create ethernet header
-    struct ether_header *eth = (struct ether_header *)buffer;
-    memcpy (eth->ether_dhost, client_mac, 6);
-    memcpy (eth->ether_shost, server_mac, 6);
-    eth->ether_type = htons(ETHERTYPE_IP);
-    printf ("send_dhcp_reply: Created ethernet header\n");
+    while (i < 312) {
+        uint8_t opt = dhcp->options[i];
 
-    // Create IP header
-    struct iphdr *ip = (struct iphdr *) (buffer + sizeof(struct ether_header));
-    ip->version = 4;
-    ip->ihl = 5;
-    ip->tot_len = htons (sizeof (struct iphdr) + sizeof (struct udphdr) + 248 + 100);
-    ip->protocol = IPPROTO_UDP;
-    ip->saddr = inet_addr (SERVER_IP);
-    ip->daddr = htonl(INADDR_BROADCAST);
-    printf ("send_dhcp_reply: Created ip header\n");
+        if (opt == 0) { // padding
+            i++;
+            continue;
+        }
 
-    // Create UDP header
-    struct udphdr *udp = (struct udphdr*) (buffer + sizeof (struct ether_header) + ip->ihl * 4);
-    udp->uh_dport = htons(68);
-    udp->uh_sport = htons(67);
-    udp->uh_ulen = htons (sizeof(struct udphdr) + 248 + 100);
-    printf ("send_dhcp_reply: Created udp header\n");
+        if (opt == 255) { // END
+            break;
+        }
 
-    // Create DHCP packet
-    dhcp_packet *dhcp = (dhcp_packet *) (buffer + sizeof (struct ether_header) + ip->ihl*4 + sizeof(struct udphdr));
-    dhcp->opcode = 2; // BOOTREPLY
-    dhcp->htype = 1;
-    dhcp->hlen = 6;
-    dhcp->hops = 0;
-    dhcp->xid = pack->xid;
-    memcpy (dhcp->chaddr , pack->chaddr, 16);
-    dhcp->yiaddr = inet_addr(OFFER_IP);
-    dhcp->siaddr = inet_addr(SERVER_IP);
-    dhcp->magic_cookie = htonl(MAGIC_COOKIE);
+        uint8_t len = dhcp->options[i+1];
 
-    dhcp->options[0].Type = 53;
-    dhcp->options[0].Lenght = 1;
-    dhcp->options[0].Value[0] = msg_type;
+        if (opt == 53 && len == 1) {  // Option 53 = DHCP Message Type
+            return dhcp->options[i+2];
+        }
 
-    dhcp->options[1].Type = 54;
-    dhcp->options[1].Lenght = 4;
-    tmp = inet_addr(SERVER_IP);
-    memcpy(dhcp->options[1].Value, &tmp, 4);
+        i += 2 + len; // nhảy sang option tiếp theo
+    }
 
-    dhcp->options[2].Type = 1;
-    dhcp->options[2].Lenght = 4;
-    tmp = inet_addr(SUBNET_MASK);
-    memcpy(dhcp->options[2].Value, &tmp, 4);
-    
-    dhcp->options[3].Type = 3;
-    dhcp->options[3].Lenght = 4;
-    tmp = inet_addr(SERVER_IP);
-    memcpy(dhcp->options[3].Value, &tmp, 4);
-
-    dhcp->options[4].Type = 51;
-    dhcp->options[4].Lenght = 4;
-    tmp = htonl(LEASE_TIME);
-    memcpy(dhcp->options[4].Value, &tmp, 4);
-
-    dhcp->options[5].Type = 255;
-    dhcp->options[5].Lenght = 0;
-    printf ("send_dhcp_reply: Created dhcp header\n");
-
-    int packet_len = sizeof(struct ether_header) + ip->ihl*4 + sizeof (struct udphdr) + 248 + 100;
-
-    printf ("Sending DHCP reply from server: %s, IP offer: %s \n", SERVER_IP, OFFER_IP);
-    return pcap_sendpacket(handle, buffer, packet_len);
+    return -1; // không tìm thấy
 }
 
-void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes) {
+int send_dhcp_reply(pcap_t *handle, const dhcp_packet *pack, uint8_t msg_type,
+                    const uint8_t server_mac[6], const uint8_t client_mac[6]) 
+{
+    uint8_t buffer[1500];
+    memset(buffer, 0, sizeof(buffer));
+
+    printf("send_dhcp_reply: Start\n");
+
+    /** ------------------- Ethernet Header ------------------- **/
+    struct ether_header *eth = (struct ether_header *)buffer;
+    memcpy(eth->ether_dhost, client_mac, 6);
+    memcpy(eth->ether_shost, server_mac, 6);
+    eth->ether_type = htons(ETHERTYPE_IP);
+    printf("send_dhcp_reply: Created ethernet header\n");
+
+    /** ------------------- IP Header ------------------- **/
+    struct iphdr *ip = (struct iphdr *)(buffer + sizeof(struct ether_header));
+    ip->version = 4;
+    ip->ihl = 5;
+    ip->tos = 0;
+    ip->id = htons(0);
+    ip->ttl = 64;
+    ip->protocol = IPPROTO_UDP;
+    ip->saddr = inet_addr(SERVER_IP);
+    ip->daddr = htonl(INADDR_BROADCAST);
+
+    uint8_t *udp_start = buffer + sizeof(struct ether_header) + sizeof(struct iphdr);
+
+    /** ------------------- UDP Header ------------------- **/
+    struct udphdr *udp = (struct udphdr *)udp_start;
+    udp->uh_sport = htons(67);
+    udp->uh_dport = htons(68);
+
+    /** ------------------- DHCP Header ------------------- **/
+    dhcp_packet *dhcp = (dhcp_packet *)(udp_start + sizeof(struct udphdr));
+    dhcp->opcode = 2;     // BOOTREPLY
+    dhcp->htype  = 1;     // Ethernet
+    dhcp->hlen   = 6;
+    dhcp->hops   = 0;
+    dhcp->xid    = pack->xid;
+
+    dhcp->yiaddr = inet_addr(OFFER_IP);
+    dhcp->siaddr = inet_addr(SERVER_IP);
+    memcpy(dhcp->chaddr, pack->chaddr, 16);
+
+    dhcp->magic_cookie = htonl(0x63825363);
+
+    /** ------------------- Build DHCP Options ------------------- **/
+    uint8_t *opt = dhcp->options;
+    int idx = 0;
+
+    // Option 53: DHCP Message Type
+    opt[idx++] = 53;
+    opt[idx++] = 1;
+    opt[idx++] = msg_type;
+
+    // Option 54: Server Identifier
+    uint32_t sip = inet_addr(SERVER_IP);
+    opt[idx++] = 54;
+    opt[idx++] = 4;
+    memcpy(&opt[idx], &sip, 4);
+    idx += 4;
+
+    // Option 1: Subnet Mask
+    uint32_t mask = inet_addr(SUBNET_MASK);
+    opt[idx++] = 1;
+    opt[idx++] = 4;
+    memcpy(&opt[idx], &mask, 4);
+    idx += 4;
+
+    // Option 3: Gateway
+    uint32_t gw = inet_addr(SERVER_IP);
+    opt[idx++] = 3;
+    opt[idx++] = 4;
+    memcpy(&opt[idx], &gw, 4);
+    idx += 4;
+
+    // Option 51: Lease Time
+    uint32_t lt = htonl(LEASE_TIME);
+    opt[idx++] = 51;
+    opt[idx++] = 4;
+    memcpy(&opt[idx], &lt, 4);
+    idx += 4;
+
+    // End Option
+    opt[idx++] = 255;
+
+    printf("send_dhcp_reply: Created dhcp header\n");
+
+    /** ------------------- Calculate Lengths ------------------- **/
+    int dhcp_size = 240 + idx;  // 240 byte fixed + options
+    int udp_len   = sizeof(struct udphdr) + dhcp_size;
+    int ip_len    = sizeof(struct iphdr) + udp_len;
+    int total_len = sizeof(struct ether_header) + ip_len;
+
+    udp->uh_ulen = htons(udp_len);
+    ip->tot_len  = htons(ip_len);
+
+    printf("Sending DHCP reply from server: %s, IP offer: %s\n",
+           SERVER_IP, OFFER_IP);
+
+    /** ------------------- Send Packet ------------------- **/
+    return pcap_sendpacket(handle, buffer, total_len);
+}
+
+void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes)
+{
     pcap_t *handle = (pcap_t*)user;
 
     uint8_t Server_MAC[6];
-    get_mac ("eth0", Server_MAC);
+    get_mac("eth0", Server_MAC);
 
-    printf ("packet_handler : See a packet \n");
-    struct ether_header *eth = (struct ether_header*) bytes;
+    printf("packet_handler: See a packet\n");
+
+    struct ether_header *eth = (struct ether_header*)bytes;
     if (eth->ether_type != htons(ETHERTYPE_IP)) {
-        printf ("Packet not have IP header\n");
-        return ;
-    }
-    printf ("packet_handler : See a packet with correct ethernet header\n"); 
-    printf("Ethernet: Src MAC = %02X:%02X:%02X:%02X:%02X:%02X\n",
-        eth->ether_shost[0], eth->ether_shost[1], eth->ether_shost[2],
-        eth->ether_shost[3], eth->ether_shost[4], eth->ether_shost[5]);
-    if (memcmp(eth->ether_shost, Server_MAC, 6) == 0) {
-        printf ("DHCP itself\n");
-        return ;
-    }
-
-    struct iphdr *ip = (struct iphdr *) (bytes + sizeof(struct ether_header));
-    if (ip->protocol != IPPROTO_UDP) {
-        printf ("Packet not have UDP header\n");
+        printf("Packet not have IP header\n");
         return;
     }
-    printf ("packet_handler : See a packet with correct ip header\n"); 
-    // IP nguồn
-    char src_ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &ip->saddr, src_ip, INET_ADDRSTRLEN);
 
-    char dst_ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &ip->daddr, dst_ip, INET_ADDRSTRLEN);
-
-    printf("IP: Source IP = %s, Dest IP = %s\n", src_ip, dst_ip);
-
-    struct udphdr *udp = (struct udphdr*) (bytes + sizeof (struct ether_header) + ip->ihl * 4);
-    printf ("packet_handler: udp packet: port source: %d, port des: %d, len: %d\n", ntohs(udp->uh_sport), ntohs(udp->uh_dport), ntohs(udp->uh_ulen));
-
-    dhcp_packet *dhcp = (dhcp_packet *) (bytes + sizeof(struct ether_header) + ip->ihl*4+ sizeof(struct udphdr));
-    for (int i =0; i < 30; i++) {
-        if (dhcp->options[i].Type == 53) {
-            if (dhcp->options[i].Value[0] == DHCP_DISCOVER) {
-                printf ("packet_handler: This is DHCP Discover\n");
-                send_dhcp_reply (handle, dhcp, DHCP_OFFER, Server_MAC, dhcp->chaddr);
-                printf ("packet_handler: Sent DHCP offer\n");
-                break;
-            }
-            else if (dhcp->options[i].Value[0] == DHCP_REQUEST) {
-                printf ("packet_handler: This is DHCP request\n");
-                send_dhcp_reply (handle, dhcp, DHCP_ACK, Server_MAC, dhcp->chaddr);
-                printf ("packet_handler: Sent DHCP ack\n");
-                break;
-            }
-            else {
-                printf ("Server not receive any Discover or Request\n");
-            }
-        }
+    if (memcmp(eth->ether_shost, Server_MAC, 6) == 0) {
+        printf("DHCP itself\n");
+        return;
     }
+
+    struct iphdr *ip = (struct iphdr*)(bytes + sizeof(struct ether_header));
+    if (ip->protocol != IPPROTO_UDP) {
+        printf("Packet not have UDP header\n");
+        return;
+    }
+
+    struct udphdr *udp =
+        (struct udphdr*)(bytes + sizeof(struct ether_header) + ip->ihl * 4);
+
+    struct dhcp_packet *dhcp =
+        (struct dhcp_packet*)(bytes + sizeof(struct ether_header) + ip->ihl * 4 + sizeof(struct udphdr));
+
+    // Parse DHCP Message Type
+    int msg_type = get_dhcp_message_type(dhcp);
+
+    if (msg_type == DHCPDISCOVER) {
+        printf("packet_handler: This is DHCP Discover\n");
+        send_dhcp_reply(handle, dhcp, DHCPOFFER, Server_MAC, dhcp->chaddr);
+        return;
+    }
+
+    if (msg_type == DHCPREQUEST) {
+        printf("packet_handler: This is DHCP Request\n");
+        send_dhcp_reply(handle, dhcp, DHCPACK, Server_MAC, dhcp->chaddr);
+        return;
+    }
+
+    printf("packet_handler: Unknown DHCP message type\n");
 }
 
 int main() {
