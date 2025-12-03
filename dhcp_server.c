@@ -60,7 +60,7 @@ int get_mac (const char *iface, uint8_t mac[6]) {
     return 1;
 }
 
-int get_dhcp_message_type(struct dhcp_packet *dhcp)
+int get_dhcp_message_type(dhcp_packet *dhcp)
 {
     int i = 0;
 
@@ -228,15 +228,15 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     // Parse DHCP Message Type
     int msg_type = get_dhcp_message_type(dhcp);
 
-    if (msg_type == DHCPDISCOVER) {
+    if (msg_type == DHCP_DISCOVER) {
         printf("packet_handler: This is DHCP Discover\n");
-        send_dhcp_reply(handle, dhcp, DHCPOFFER, Server_MAC, dhcp->chaddr);
+        send_dhcp_reply(handle, dhcp, DHCP_OFFER, Server_MAC, dhcp->chaddr);
         return;
     }
 
-    if (msg_type == DHCPREQUEST) {
+    if (msg_type == DHCP_REQUEST) {
         printf("packet_handler: This is DHCP Request\n");
-        send_dhcp_reply(handle, dhcp, DHCPACK, Server_MAC, dhcp->chaddr);
+        send_dhcp_reply(handle, dhcp, DHCP_ACK, Server_MAC, dhcp->chaddr);
         return;
     }
 
