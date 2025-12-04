@@ -28,12 +28,6 @@
 #define DHCP_FILE_LEN   128
 #define DHCP_OPTIONS_LEN 312  
 
-// typedef struct {
-//     uint8_t Type;
-//     uint8_t Lenght;
-//     char Value[80];
-// } dhcp_option;
-
 typedef struct 
 {
     uint8_t opcode, htype, hlen, hops;
@@ -222,8 +216,8 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     struct udphdr *udp =
         (struct udphdr*)(bytes + sizeof(struct ether_header) + ip->ihl * 4);
 
-    struct dhcp_packet *dhcp =
-        (struct dhcp_packet*)(bytes + sizeof(struct ether_header) + ip->ihl * 4 + sizeof(struct udphdr));
+    dhcp_packet *dhcp =
+        (dhcp_packet*)(bytes + sizeof(struct ether_header) + ip->ihl * 4 + sizeof(struct udphdr));
 
     // Parse DHCP Message Type
     int msg_type = get_dhcp_message_type(dhcp);
