@@ -171,9 +171,9 @@ int send_dhcp_reply(pcap_t *handle, const dhcp_packet *req,
     udp->uh_ulen = htons(udp_len);
     ip->tot_len = htons(ip_len);
 
-    /******************** IP CHECKSUM ********************/
-    ip->check = 0;
-    ip->check = checksum((uint16_t*)ip, sizeof(struct iphdr)/2);
+    // // /******************** IP CHECKSUM ********************/
+    // // ip->check = 0;
+    // // ip->check = checksum((uint16_t*)ip, sizeof(struct iphdr)/2);
 
     // /******************** UDP CHECKSUM ********************/
     // struct {
