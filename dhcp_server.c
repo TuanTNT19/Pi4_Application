@@ -175,28 +175,28 @@ int send_dhcp_reply(pcap_t *handle, const dhcp_packet *req,
     ip->check = 0;
     ip->check = checksum((uint16_t*)ip, sizeof(struct iphdr)/2);
 
-    /******************** UDP CHECKSUM ********************/
-    struct {
-        uint32_t src, dst;
-        uint8_t zero;
-        uint8_t proto;
-        uint16_t len;
-    } pseudo;
+    // /******************** UDP CHECKSUM ********************/
+    // struct {
+    //     uint32_t src, dst;
+    //     uint8_t zero;
+    //     uint8_t proto;
+    //     uint16_t len;
+    // } pseudo;
 
-    pseudo.src = ip->saddr;
-    pseudo.dst = ip->daddr;
-    pseudo.zero = 0;
-    pseudo.proto = IPPROTO_UDP;
-    pseudo.len = udp->uh_ulen;
+    // pseudo.src = ip->saddr;
+    // pseudo.dst = ip->daddr;
+    // pseudo.zero = 0;
+    // pseudo.proto = IPPROTO_UDP;
+    // pseudo.len = udp->uh_ulen;
 
-    int pseudo_len = sizeof(pseudo) + udp_len;
-    uint8_t *pseudo_buf = malloc(pseudo_len);
+    // int pseudo_len = sizeof(pseudo) + udp_len;
+    // uint8_t *pseudo_buf = malloc(pseudo_len);
 
-    memcpy(pseudo_buf, &pseudo, sizeof(pseudo));
-    memcpy(pseudo_buf + sizeof(pseudo), udp, udp_len);
+    // memcpy(pseudo_buf, &pseudo, sizeof(pseudo));
+    // memcpy(pseudo_buf + sizeof(pseudo), udp, udp_len);
 
-    udp->uh_sum = checksum((uint16_t*)pseudo_buf, pseudo_len/2);
-    free(pseudo_buf);
+    // udp->uh_sum = checksum((uint16_t*)pseudo_buf, pseudo_len/2);
+    // free(pseudo_buf);
 
     return pcap_sendpacket(handle, buffer, total_len);
 }
