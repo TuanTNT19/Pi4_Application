@@ -69,17 +69,12 @@ int get_dhcp_message_type(dhcp_packet *dhcp)
 {
     int i = 0;
     while (i < DHCP_OPTIONS_LEN) {
-        uint8_t opt = dhcp->options[i];
-
-        if (opt == 0) { i++; continue; }
-        if (opt == 255) break;
-
+        uint8_t code = dhcp->options[i];
         uint8_t len = dhcp->options[i+1];
-
-        if (opt == 53 && len == 1)
+        if (code == 53 && len == 1) {
             return dhcp->options[i+2];
-
-        i += 2 + len;
+        }
+        i += (2 + len);
     }
     return -1;
 }
@@ -88,7 +83,7 @@ int get_dhcp_message_type(dhcp_packet *dhcp)
  *                SEND DHCP OFFER / ACK
  ***********************************************************/
 int send_dhcp_reply(pcap_t *handle, const dhcp_packet *req,
-                    uint8_t msg_type, const uint8_t server_mac[6])
+                    uint8_t msg_type, const uint8_t server_mac[6], const uint8_t client_mac[6])
 {
     uint8_t buffer[1500];
     memset(buffer, 0, sizeof(buffer));
@@ -101,7 +96,7 @@ int send_dhcp_reply(pcap_t *handle, const dhcp_packet *req,
         (dhcp_packet*)((uint8_t*)udp + sizeof(struct udphdr));
 
     /******************** ETHERNET ********************/
-    memcpy(eth->ether_dhost, "\xff\xff\xff\xff\xff\xff", 6);  // broadcast
+    memcpy(eth->ether_dhost, client_mac, 6);  // broadcast
     memcpy(eth->ether_shost, server_mac, 6);
     eth->ether_type = htons(ETHERTYPE_IP);
 
@@ -170,38 +165,38 @@ int send_dhcp_reply(pcap_t *handle, const dhcp_packet *req,
 
     int dhcp_size = 240 + idx;
     int udp_len = sizeof(struct udphdr) + dhcp_size;
-    int ip_len = sizeof(struct iphdr) + udp_len;
+    int ip_len = ip->ihl*4 + udp_len;
     int total_len = sizeof(struct ether_header) + ip_len;
 
     udp->uh_ulen = htons(udp_len);
     ip->tot_len = htons(ip_len);
 
-    /******************** IP CHECKSUM ********************/
-    ip->check = 0;
-    ip->check = checksum((uint16_t*)ip, sizeof(struct iphdr)/2);
+    // /******************** IP CHECKSUM ********************/
+    // ip->check = 0;
+    // ip->check = checksum((uint16_t*)ip, sizeof(struct iphdr)/2);
 
-    /******************** UDP CHECKSUM ********************/
-    struct {
-        uint32_t src, dst;
-        uint8_t zero;
-        uint8_t proto;
-        uint16_t len;
-    } pseudo;
+    // /******************** UDP CHECKSUM ********************/
+    // struct {
+    //     uint32_t src, dst;
+    //     uint8_t zero;
+    //     uint8_t proto;
+    //     uint16_t len;
+    // } pseudo;
 
-    pseudo.src = ip->saddr;
-    pseudo.dst = ip->daddr;
-    pseudo.zero = 0;
-    pseudo.proto = IPPROTO_UDP;
-    pseudo.len = udp->uh_ulen;
+    // pseudo.src = ip->saddr;
+    // pseudo.dst = ip->daddr;
+    // pseudo.zero = 0;
+    // pseudo.proto = IPPROTO_UDP;
+    // pseudo.len = udp->uh_ulen;
 
-    int pseudo_len = sizeof(pseudo) + udp_len;
-    uint8_t *pseudo_buf = malloc(pseudo_len);
+    // int pseudo_len = sizeof(pseudo) + udp_len;
+    // uint8_t *pseudo_buf = malloc(pseudo_len);
 
-    memcpy(pseudo_buf, &pseudo, sizeof(pseudo));
-    memcpy(pseudo_buf + sizeof(pseudo), udp, udp_len);
+    // memcpy(pseudo_buf, &pseudo, sizeof(pseudo));
+    // memcpy(pseudo_buf + sizeof(pseudo), udp, udp_len);
 
-    udp->uh_sum = checksum((uint16_t*)pseudo_buf, pseudo_len/2);
-    free(pseudo_buf);
+    // udp->uh_sum = checksum((uint16_t*)pseudo_buf, pseudo_len/2);
+    // free(pseudo_buf);
 
     return pcap_sendpacket(handle, buffer, total_len);
 }
@@ -215,22 +210,38 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     uint8_t server_mac[6];
     get_mac("eth0", server_mac);
 
-    struct iphdr *ip = (struct iphdr*)(bytes + sizeof(struct ether_header));
-    if (ip->protocol != IPPROTO_UDP) return;
+    struct ether_header *eth = (struct ether_header*)bytes;
+    if (eth->ether_type != htons(ETHERTYPE_IP)){
+        printf ("Packet do not have Ip header\n");
+        return ;
+    }
+
+    if (memcmp(eth->ether_shost, Server_MAC, 6) == 0) {
+        printf("DHCP itself\n");
+        return;
+    }
+
+    struct iphdr *ip = (struct iphdr *) (bytes + sizeof(struct ether_header));
+    if (ip->protocol != IPPROTO_UDP) {
+        printf ("Packet do not have UDP header\n");
+        return ;
+    }
 
     struct udphdr *udp = (struct udphdr*)(bytes + sizeof(struct ether_header) + ip->ihl*4);
     dhcp_packet *dhcp =
         (dhcp_packet*)((uint8_t*)udp + sizeof(struct udphdr));
+    
+    dhcp_packet *dhcp = (dhcp_packet *) (bytes + sizeof(struct ether_header) + ip->ihl*4 + sizeof(struct udphdr));
 
     int msg = get_dhcp_message_type(dhcp);
 
     if (msg == 1) {  // DISCOVER
         printf("[+] DHCP DISCOVER → OFFER\n");
-        send_dhcp_reply(handle, dhcp, 2, server_mac);
+        send_dhcp_reply(handle, dhcp, 2, server_mac, dhcp->chaddr);
     }
     else if (msg == 3) {  // REQUEST
         printf("[+] DHCP REQUEST → ACK\n");
-        send_dhcp_reply(handle, dhcp, 5, server_mac);
+        send_dhcp_reply(handle, dhcp, 5, server_mac, dhcp->chaddr);
     }
 }
 
