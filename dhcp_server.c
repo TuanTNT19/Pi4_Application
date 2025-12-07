@@ -216,7 +216,7 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
         return ;
     }
 
-    if (memcmp(eth->ether_shost, Server_MAC, 6) == 0) {
+    if (memcmp(eth->ether_shost, server_mac, 6) == 0) {
         printf("DHCP itself\n");
         return;
     }
@@ -226,10 +226,6 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
         printf ("Packet do not have UDP header\n");
         return ;
     }
-
-    struct udphdr *udp = (struct udphdr*)(bytes + sizeof(struct ether_header) + ip->ihl*4);
-    dhcp_packet *dhcp =
-        (dhcp_packet*)((uint8_t*)udp + sizeof(struct udphdr));
     
     dhcp_packet *dhcp = (dhcp_packet *) (bytes + sizeof(struct ether_header) + ip->ihl*4 + sizeof(struct udphdr));
 
