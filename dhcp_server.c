@@ -115,7 +115,7 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     ip->ttl = 64;
     ip->protocol = IPPROTO_UDP;
     ip->saddr = inet_addr (SERVER_IP);
-    ip->daddr = inet_addr (INADDR_BROADCAST);
+    ip->daddr =  htonl(INADDR_BROADCAST);
     ip->check = checksum((uint16_t*)ip, sizeof(struct iphdr)/2);
 
     /* Create UDP header */
@@ -129,7 +129,7 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     dhcp->htype = 1; // Ethernet
     dhcp->hlen = 6;
     dhcp->xid = req->xid;
-    dhcp->yiaddr = inet_addr (ip_offer_gen(SERVER_IP));
+    dhcp->yiaddr = htonl (ip_offer_gen(SERVER_IP));
     dhcp->siaddr = inet_addr (SERVER_IP);
     memcpy(dhcp->chaddr, req->chaddr, 16);
     dhcp->magic_cookie = htonl (MAGIC_COOKIE);
@@ -141,22 +141,22 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     dhcp->options[index++] = 54; // Server Identifier
     dhcp->options[index++] = 4;
     uint32_t ip_server = inet_addr(SERVER_IP);
-    memcpy(dhcp->options[index], &ip_server, 4);
+    memcpy(&dhcp->options[index], &ip_server, 4);
     index +=4;
     dhcp->options[index++] = 1; // Subnet Mask
     dhcp->options[index++] = 4;
     uint32_t mask = inet_addr(SUBNET_MASK);
-    memcpy(dhcp->options[index], &mask, 4);
+    memcpy(&dhcp->options[index], &mask, 4);
     index +=4;
     dhcp->options[index++] = 3; // Router
     dhcp->options[index++] = 4;
     uint32_t ip_gw = inet_addr(SERVER_IP);
-    memcpy(dhcp->options[index], &ip_gw, 4);
+    memcpy(&dhcp->options[index], &ip_gw, 4);
     index +=4;
     dhcp->options[index++] = 51; // Lease time
     dhcp->options[index++] = 4;
     uint32_t lease_time = htonl(LEASE_TIME);
-    memcpy(dhcp->options, &lease_time, 4);
+    memcpy(&dhcp->options, &lease_time, 4);
     index +=4;
     dhcp->options[index++] = 255;
 
