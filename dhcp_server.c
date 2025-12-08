@@ -197,11 +197,12 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
 }
 
 int main() {
+    uint8_t mac[6];
     char err[256];
     pcap_t *handle;
     handle = pcap_open_live("eth0", 65536, 1, 1000, err);
     if (!handle) {
-        return ;
+        return -1;
     }
 
     struct bpf_program *bf;
