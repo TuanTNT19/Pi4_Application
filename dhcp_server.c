@@ -199,17 +199,17 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
 int main() {
     char err[256];
     pcap_t *handle;
-    handle = pcap_open_live("eth0", 65536, 1, err);
+    handle = pcap_open_live("eth0", 65536, 1, 1000, err);
     if (!handle) {
         return ;
     }
 
     struct bpf_program *bf;
     if (pcap_compile(handle, bf, "udp port 67 or udp port 68", 0, PCAP_NETMASK_UNKNOWN) < 0) {
-        return ;
+        return -1;
     }
     if (pcap_setfilter(handle, bf) < 0) {
-        return ;
+        return -1;
     }
     pcap_freecode(bf); 
 
