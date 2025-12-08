@@ -196,29 +196,26 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     }
 }
 
-int main() {
-    uint8_t mac[6];
+int main()
+{
     char err[256];
-    pcap_t *handle;
-    handle = pcap_open_live("eth0", 65536, 1, 1000, err);
+    pcap_t *handle = pcap_open_live("eth0", 65536, 1, 1000, err);
     if (!handle) {
-        return -1;
+        printf("pcap_open: %s\n", err);
+        return 1;
     }
 
-    struct bpf_program *bf;
-    if (pcap_compile(handle, bf, "udp port 67 or udp port 68", 0, PCAP_NETMASK_UNKNOWN) < 0) {
-        return -1;
-    }
-    if (pcap_setfilter(handle, bf) < 0) {
-        return -1;
-    }
-    pcap_freecode(bf); 
+    struct bpf_program fp;
+    pcap_compile(handle, &fp, "udp port 67 or udp port 68", 0, PCAP_NETMASK_UNKNOWN);
+    pcap_setfilter(handle, &fp);
+    pcap_freecode(&fp);
 
+    uint8_t mac[6];
     get_mac("eth0", mac);
 
     printf("DHCP Server started (%02X:%02X:%02X:%02X:%02X:%02X)\n",
         mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-        
-    pcap_loop (handle, 0, packet_handler, (u_char*)handle);
+
+    pcap_loop(handle, 0, packet_handler, (u_char*)handle);
     return 0;
 }
