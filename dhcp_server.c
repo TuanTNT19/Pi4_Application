@@ -156,7 +156,7 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     dhcp->options[index++] = 51; // Lease time
     dhcp->options[index++] = 4;
     uint32_t lease_time = htonl(LEASE_TIME);
-    memcpy(&dhcp->options, &lease_time, 4);
+    memcpy(&dhcp->options[index], &lease_time, 4);
     index +=4;
     dhcp->options[index++] = 255;
 
