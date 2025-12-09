@@ -163,7 +163,7 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     int dhcp_size = 240 + index;
     udp->uh_ulen = htons(sizeof(struct udphdr) + dhcp_size);
     ip->tot_len = htons(ip->ihl*4 + sizeof(struct udphdr) + dhcp_size);
-    int total_len = sizeof(struct ether_header) + ip->tot_len;
+    int total_len = sizeof(struct ether_header) + ip->ihl*4 + sizeof(struct udphdr) + dhcp_size;
 
     return pcap_sendpacket(handle, buffer, total_len);
 }
