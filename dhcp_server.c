@@ -116,7 +116,6 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     ip->protocol = IPPROTO_UDP;
     ip->saddr = inet_addr (SERVER_IP);
     ip->daddr =  htonl(INADDR_BROADCAST);
-    ip->check = checksum((uint16_t*)ip, sizeof(struct iphdr)/2);
 
     /* Create UDP header */
     struct udphdr* udp = (struct udphdr*) (buffer + sizeof(struct ether_header) + ip->ihl*4);
@@ -165,6 +164,8 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     ip->tot_len = htons(ip->ihl*4 + sizeof(struct udphdr) + dhcp_size);
     int total_len = sizeof(struct ether_header) + ip->ihl*4 + sizeof(struct udphdr) + dhcp_size;
 
+    ip->check = checksum((uint16_t*)ip, sizeof(struct iphdr)/2);
+    
     return pcap_sendpacket(handle, buffer, total_len);
 }
 
