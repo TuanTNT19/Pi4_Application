@@ -178,6 +178,10 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     if (eth->ether_type != htons(ETHERTYPE_IP)) {
         return ;
     }
+    if (memcmp(eth->ether_shost, server_mac, 6) == 0) {
+        printf("DHCP itself\n");
+        return;
+    }
     printf("packet_handler: Got ethernet header\n");
     struct iphdr *ip = (struct iphdr *)(bytes + sizeof(struct ether_header));
     if (ip->protocol != IPPROTO_UDP) {
