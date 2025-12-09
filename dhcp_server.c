@@ -108,7 +108,7 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     eth->ether_type = htons(ETHERTYPE_IP);
 
     /* Create IP header */
-    struct iphdr *ip = (struct iphdr*) (buffer + sizeof(struct ether_header*));
+    struct iphdr *ip = (struct iphdr*) (buffer + sizeof(struct ether_header));
     ip->version = 4;
     ip->ihl = 5;
     ip->tos = 0;
@@ -119,12 +119,12 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     ip->check = checksum((uint16_t*)ip, sizeof(struct iphdr)/2);
 
     /* Create UDP header */
-    struct udphdr* udp = (struct udphdr*) (buffer + sizeof(struct ether_header*) + ip->ihl*4);
+    struct udphdr* udp = (struct udphdr*) (buffer + sizeof(struct ether_header) + ip->ihl*4);
     udp->uh_dport = htons(68);
     udp->uh_sport = htons(67);
 
     /* Create dhcp packet */
-    dhcp_packet *dhcp = (dhcp_packet *) (buffer + sizeof(struct ether_header*) + ip->ihl*4 + sizeof(struct udphdr));
+    dhcp_packet *dhcp = (dhcp_packet *) (buffer + sizeof(struct ether_header) + ip->ihl*4 + sizeof(struct udphdr));
     dhcp->opcode = 2; // BOOTREPLY
     dhcp->htype = 1; // Ethernet
     dhcp->hlen = 6;
