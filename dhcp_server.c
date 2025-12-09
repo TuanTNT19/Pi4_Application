@@ -161,8 +161,8 @@ int dhcp_send_reply(pcap_t *handle, dhcp_packet *req, uint8_t dhcp_message_type,
     dhcp->options[index++] = 255;
 
     int dhcp_size = 240 + index;
-    udp->uh_ulen = sizeof(struct udphdr) + dhcp_size;
-    ip->tot_len = ip->ihl*4 + udp->uh_ulen;
+    udp->uh_ulen = htons(sizeof(struct udphdr) + dhcp_size);
+    ip->tot_len = htons(ip->ihl*4 + sizeof(struct udphdr) + dhcp_size);
     int total_len = sizeof(struct ether_header) + ip->tot_len;
 
     return pcap_sendpacket(handle, buffer, total_len);
@@ -172,24 +172,28 @@ void packet_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *byt
     pcap_t *handle = (pcap_t*)user;
     uint8_t server_mac[6];
     get_mac("eth0", server_mac);
+    printf("packet_handler: Start\n");
 
     struct ether_header *eth = (struct ether_header*)bytes;
     if (eth->ether_type != htons(ETHERTYPE_IP)) {
         return ;
     }
-
+    printf("packet_handler: Got ethernet header\n");
     struct iphdr *ip = (struct iphdr *)(bytes + sizeof(struct ether_header));
     if (ip->protocol != IPPROTO_UDP) {
         return ;
     }
 
+    printf("packet_handler: Got IP header\n");
     dhcp_packet *dhcp = (dhcp_packet *)(bytes + sizeof(struct ether_header) + ip->ihl*4 + sizeof(struct udphdr));
     uint8_t dhcp_option_message_type = get_dhcp_message_type(dhcp);
     if (dhcp_option_message_type == DHCP_DISCOVER) {
         dhcp_send_reply(handle, dhcp, DHCP_OFFER, server_mac, dhcp->chaddr);
+        printf("packet_handler: Sent DHCP Offer\n");
     }
     else if (dhcp_option_message_type == DHCP_REQUEST) {
         dhcp_send_reply(handle, dhcp, DHCP_ACK, server_mac, dhcp->chaddr);
+        printf("packet_handler: Sent DHCP ACK\n");
     }
     else {
         return ;
