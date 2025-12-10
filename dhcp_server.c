@@ -52,7 +52,7 @@ uint32_t ip_offer_gen(const char *dhcp_server_ip)
 
     uint32_t offer_ip = (a << 24) | (b << 16) | (c << 8) | host;
 
-    return htonl(offer_ip);  // trả về dạng network byte order
+    return offer_ip;  // trả về dạng network byte order
 }
 
 uint8_t get_dhcp_message_type (dhcp_packet *dhcp) {
