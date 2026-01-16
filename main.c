@@ -1,55 +1,42 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
+#include <pthread.h>
+#include "interface_tool.h"
+#include "kernel_handler.h"
+#include "user_handler.h"
 
-#define LED_DEVICE_PATH "/dev/my_led23_device"
+int socket_fd;
+char user_str[4096] = {0};
 
-int fd;
-
-// Clear the terminal
-void clrscr() {
-    system("clear");
-    return;
+void *func1 (void *arg) {
+    char *str= (char *)arg;
+    printf ("check func1: %s\n", str);
+    int count = 0;
+    char **user_cmd = parse_func (str, &count);
+    action_handle (user_cmd, count, socket_fd);
+    free_parsed_words(user_cmd, count);
+    return NULL;
 }
 
-int main() {
-    int chosen;
-    fd = open(LED_DEVICE_PATH, O_RDWR);
-    if (fd < 0) {
-        perror("Failed to open device");
-        return 1;
+void *func2 (void *arg) {
+    while (1) {
+        display(socket_fd);
+        sleep(1);
     }
+}
 
-    while(1){
-        do
-        {
-            printf("1. Led ON\n");
-            printf("0. Led OFF\n");
-            printf("Enter your chosen: ");
-            scanf("%d", &chosen);
-            if ((chosen == 1) && (chosen ==0)){
-                printf("Invalid chosen !! Do again \n");
-            }
-        } while (chosen != 1 && chosen != 0)
+int main(int argc, char *argv[]) {
+    pthread_t thr1;
+    pthread_t thr2;
+    socket_fd = netl_socket_create();
 
-        if (chosen == 1){
-            int ret = write (fd, "1", 1);
-            if (ret == -1)
-            {
-                printf("Can not write 1\n");
-            }
-        }
-        else {
-            int ret = write (fd, "0", 1);
-            if (ret == -1)
-            {
-                printf("Can not write 0\n");
-            }            
-        }
+    for (int i = 1; i < argc; i++) {
+        sprintf (user_str, "%s %s", user_str, argv[i]);
     }
+    printf ("Check main: %s\n", user_str);
 
-    close (fd);
+    pthread_create(&thr1, NULL, func1, user_str);
+    pthread_create(&thr2, NULL, func2, NULL);
+    pthread_join(thr1, NULL);
+    sleep (5);
+    pthread_cancel(thr2);
     return 0;
 }
