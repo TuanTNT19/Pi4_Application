@@ -13,30 +13,24 @@
 
 #define PR_ERR(str)  printf("[ERROR] failed in %s function\n", str)
 #define PR_INF(str)  printf("[INFO] before step %s function \n", str)
-// #define MESS_TYPE_INFO   1
-// #define MESS_TYPE_IP     2
-// #define MESS_TYPE_ROUTE  3
 #define BUFSIZE 8192
 
 typedef struct {
     struct nlmsghdr header;
     struct ifinfomsg payload;
+    char             attrbuf[256];
 } netl_iface_info;
 
 typedef struct {
     struct nlmsghdr header;
     struct ifaddrmsg payload;
+    char             attrbuf[256];
 } netl_iface_ip;
-
-// typedef struct {
-//     struct nlmsghdr header;
-//     struct rtmsg payload;
-// } netl_iface_route;
 
 typedef struct {
     struct nlmsghdr header;
     struct rtmsg    payload;
-    char            attrbuf[256];   // 👈 BẮT BUỘC
+    char            attrbuf[256]; 
 } netl_iface_route;
 
 int netl_socket_create();

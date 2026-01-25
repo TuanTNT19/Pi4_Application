@@ -114,7 +114,6 @@ const char *extract_ip_from_cidr(const char *cidr) {
 }
 
 void action_handle (char **word, int count, int socket_fd) {
-    printf ("check : %s %s %s \n", word[0], word[1], word[2]);
     if (!strcmp (word[0], "link")) {
         netl_iface_info my_iface_info;
         if (!strcmp (word[1], "show")) {

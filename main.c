@@ -8,7 +8,6 @@ char user_str[4096] = {0};
 
 void *func1 (void *arg) {
     char *str= (char *)arg;
-    printf ("check func1: %s\n", str);
     int count = 0;
     char **user_cmd = parse_func (str, &count);
     action_handle (user_cmd, count, socket_fd);
@@ -31,12 +30,11 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         sprintf (user_str, "%s %s", user_str, argv[i]);
     }
-    printf ("Check main: %s\n", user_str);
 
     pthread_create(&thr1, NULL, func1, user_str);
     pthread_create(&thr2, NULL, func2, NULL);
     pthread_join(thr1, NULL);
-    sleep (5);
+    sleep (3);
     pthread_cancel(thr2);
     return 0;
 }

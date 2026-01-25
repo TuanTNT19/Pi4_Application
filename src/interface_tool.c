@@ -140,13 +140,16 @@ bool iface_set_MTU_i (netl_iface_info *iface_info, int fd, int index, int mtu) {
 
     iface_info->payload.ifi_family = AF_UNSPEC;
     iface_info->payload.ifi_index = index;
-    struct rtattr* rta = IFLA_RTA (&iface_info->payload);
-    rta->rta_type = IFLA_MTU;
+
+    int attr_len = 0;
+    struct rtattr* rta = (struct rtattr*)iface_info->attrbuf;
     rta->rta_len = RTA_ALIGN (RTA_LENGTH (sizeof(int)));
+    rta->rta_type = IFLA_MTU;
     *(int *)RTA_DATA (rta) = mtu;
+    attr_len += rta->rta_len;
 
-    iface_info->header.nlmsg_len += rta->rta_len;
-
+    iface_info->header.nlmsg_len += attr_len;
+    
     struct msghdr mess = prepare_mess (iface_info, iface_info->header.nlmsg_len);
     if (sendmsg(fd, &mess, 0) < 0 )
     {
@@ -173,11 +176,13 @@ bool iface_set_ip (netl_iface_ip *iface_ip, int index, char *ip, int fd) {
     iface_ip->payload.ifa_index = index;
 
     // IFA_LOCAL
-    struct rtattr *rta = IFA_RTA(&iface_ip->payload);
-    rta->rta_type = IFA_LOCAL;
+    int attr_len = 0;
+    struct rtattr *rta = (struct rtattr *)iface_ip->attrbuf;
     rta->rta_len = RTA_ALIGN (RTA_LENGTH(sizeof(struct in_addr)));
+    rta->rta_type = IFA_LOCAL;
     memcpy(RTA_DATA(rta), &addr, sizeof(addr));
-    iface_ip->header.nlmsg_len += rta->rta_len;
+    attr_len += rta->rta_len;
+    iface_ip->header.nlmsg_len += attr_len;
 
     struct msghdr mess = prepare_mess (iface_ip, iface_ip->header.nlmsg_len);
     if (sendmsg(fd, &mess, 0) < 0 )
@@ -204,11 +209,13 @@ bool iface_del_ip (netl_iface_ip *iface_ip, int index, char *ip, int fd) {
     iface_ip->payload.ifa_flags = IFA_F_PERMANENT;
     iface_ip->payload.ifa_scope = RT_SCOPE_UNIVERSE;
 
-    struct rtattr* rta = IFA_RTA (&iface_ip->payload);
-    rta->rta_type = IFA_ADDRESS;
+    int attr_len = 0;
+    struct rtattr *rta = (struct rtattr *)iface_ip->attrbuf;
     rta->rta_len = RTA_ALIGN (RTA_LENGTH(sizeof(struct in_addr)));
-    memcpy(RTA_DATA(rta), &addr, sizeof(struct in_addr));
-    iface_ip->header.nlmsg_len += rta->rta_len;
+    rta->rta_type = IFA_ADDRESS;
+    memcpy(RTA_DATA(rta), &addr, sizeof(addr));
+    attr_len += rta->rta_len;
+    iface_ip->header.nlmsg_len += attr_len;
     
     struct msghdr mess = prepare_mess (iface_ip, iface_ip->header.nlmsg_len);
     if (sendmsg(fd, &mess, 0) < 0 )

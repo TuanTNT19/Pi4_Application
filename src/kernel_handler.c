@@ -47,9 +47,9 @@ void display (int fd) {
             }
 
                 printf ("Basic interface info\n");
-                printf ("IFI Family: %d\n", payload->ifi_family);
-                printf ("Interface index: %d\n", payload->ifi_index);
-                printf ("Interface name: %s\n", ifname);
+                printf ("IFI Family: %d - ", payload->ifi_family);
+                printf ("Interface index: %d - ", payload->ifi_index);
+                printf ("Interface name: %s - ", ifname);
                 if (payload->ifi_flags & IFF_UP) printf ("Status: UP\n");
                 else if (payload->ifi_flags & IFF_RUNNING) printf ("Status: RUNNING\n");
                 else if (payload->ifi_flags & IFF_LOOPBACK) printf ("Status: LOOPBACK\n");
