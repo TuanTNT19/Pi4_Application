@@ -5,6 +5,7 @@
 
 int socket_fd;
 char user_str[4096] = {0};
+size_t len = 0;
 
 void *func1 (void *arg) {
     char *str= (char *)arg;
@@ -28,8 +29,13 @@ int main(int argc, char *argv[]) {
     socket_fd = netl_socket_create();
 
     for (int i = 1; i < argc; i++) {
-        sprintf (user_str, "%s %s", user_str, argv[i]);
+        len += snprintf(user_str + len,
+                        sizeof(user_str) - len,
+                        "%s%s",
+                        (i > 1) ? " " : "",
+                        argv[i]);
     }
+
 
     pthread_create(&thr1, NULL, func1, user_str);
     pthread_create(&thr2, NULL, func2, NULL);
